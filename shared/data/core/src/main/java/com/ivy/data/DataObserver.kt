@@ -4,6 +4,10 @@ import com.ivy.data.model.Account
 import com.ivy.data.model.AccountId
 import com.ivy.data.model.Category
 import com.ivy.data.model.CategoryId
+import com.ivy.data.model.SharedAccount
+import com.ivy.data.model.SharedAccountId
+import com.ivy.data.model.SharedTransaction
+import com.ivy.data.model.SharedTransactionId
 import com.ivy.data.model.Tag
 import com.ivy.data.model.TagId
 import com.ivy.data.model.sync.UniqueId
@@ -36,6 +40,14 @@ sealed interface DataWriteEvent {
     sealed interface TagChange : DataWriteEvent
     data class SaveTags(val tags: List<Tag>) : TagChange
     data class DeleteTags(val operation: DeleteOperation<TagId>) : TagChange
+
+    sealed interface SharedAccountChange : DataWriteEvent
+    data class SaveSharedAccounts(val accounts: List<SharedAccount>) : SharedAccountChange
+    data class DeleteSharedAccounts(val operation: DeleteOperation<SharedAccountId>) : SharedAccountChange
+
+    sealed interface SharedTransactionChange : DataWriteEvent
+    data class SaveSharedTransactions(val transactions: List<SharedTransaction>) : SharedTransactionChange
+    data class DeleteSharedTransactions(val operation: DeleteOperation<SharedTransactionId>) : SharedTransactionChange
 }
 
 sealed interface DeleteOperation<out Id : UniqueId> {
