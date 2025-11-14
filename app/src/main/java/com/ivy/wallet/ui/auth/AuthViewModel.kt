@@ -1,4 +1,4 @@
-package com.ivy.data.auth.ui
+package com.ivy.wallet.ui.auth
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue

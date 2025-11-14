@@ -1,4 +1,4 @@
-package com.ivy.data.auth.ui
+package com.ivy.wallet.ui.auth
 
 /**
  * Represents the authentication UI state.
