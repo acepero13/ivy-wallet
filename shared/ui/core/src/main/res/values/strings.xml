@@ -495,4 +495,9 @@
     <string name="bill_paid">Your bill for %1$s %2$s has been paid</string>
     <string name="language">Language</string>
     <string name="advanced_features">Advanced features</string>
+    <string name="shared_accounts">Shared Accounts</string>
+    <string name="shared_accounts_subtitle">Track expenses together</string>
+    <string name="no_shared_accounts">No Shared Accounts</string>
+    <string name="no_shared_accounts_description">Create a shared account to track expenses with your partner, family, or friends</string>
+    <string name="create_shared_account">Create Shared Account</string>
 </resources>

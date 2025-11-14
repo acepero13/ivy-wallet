@@ -147,3 +147,5 @@ data object DisclaimerScreen : Screen
 data object PollScreen : Screen
 
 data object AuthScreen : Screen
+
+data object SharedAccountsScreen : Screen
