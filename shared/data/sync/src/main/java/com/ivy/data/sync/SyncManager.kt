@@ -42,6 +42,11 @@ class SyncManager @Inject constructor(
     val syncState: StateFlow<SyncState> = _syncState.asStateFlow()
 
     /**
+     * Callback invoked when a sync operation completes successfully
+     */
+    var onOperationSynced: (suspend (SyncOperation) -> Unit)? = null
+
+    /**
      * Enqueue a new operation to be synced
      *
      * @param operation The operation to sync
@@ -106,6 +111,9 @@ class SyncManager @Inject constructor(
                 when (result) {
                     is SyncResult.Success -> {
                         syncQueue.markCompleted(operation.id)
+
+                        // Notify callback that operation was synced successfully
+                        onOperationSynced?.invoke(operation)
                     }
                     is SyncResult.Failure -> {
                         syncQueue.markFailed(operation.id, result.error)
