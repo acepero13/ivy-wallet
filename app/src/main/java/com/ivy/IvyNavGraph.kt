@@ -17,7 +17,9 @@ import com.ivy.importdata.csvimport.ImportCSVScreen
 import com.ivy.loans.loan.LoansScreen
 import com.ivy.loans.loandetails.LoanDetailsScreen
 import com.ivy.main.MainScreen
+import com.ivy.data.auth.ui.AuthScreen
 import com.ivy.navigation.AttributionsScreen
+import com.ivy.navigation.AuthScreen
 import com.ivy.navigation.BalanceScreen
 import com.ivy.navigation.BudgetScreen
 import com.ivy.navigation.CSVScreen
@@ -88,5 +90,11 @@ fun BoxWithConstraintsScope.IvyNavGraph(screen: Screen?) {
         ReleasesScreen -> ReleasesScreenImpl()
         DisclaimerScreen -> DisclaimerScreenImpl()
         PollScreen -> PollScreen()
+        is com.ivy.navigation.AuthScreen -> AuthScreen(
+            onAuthSuccess = {
+                // Navigate to main screen after successful auth
+                // TODO: This will be enhanced in future PRs
+            }
+        )
     }
 }
