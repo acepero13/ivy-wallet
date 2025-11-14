@@ -54,6 +54,7 @@ import com.ivy.reports.ReportScreen
 import com.ivy.search.SearchScreen
 import com.ivy.settings.SettingsScreen
 import com.ivy.sharedaccounts.SharedAccountsScreen
+import com.ivy.sharedaccounts.detail.SharedAccountDetailScreen
 import com.ivy.transaction.EditTransactionScreen
 import com.ivy.transactions.TransactionsScreen
 
@@ -98,5 +99,6 @@ fun BoxWithConstraintsScope.IvyNavGraph(screen: Screen?) {
             }
         )
         is com.ivy.navigation.SharedAccountsScreen -> SharedAccountsScreen(screen = screen)
+        is com.ivy.navigation.SharedAccountDetailScreen -> SharedAccountDetailScreen(screen = screen)
     }
 }

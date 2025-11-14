@@ -149,3 +149,7 @@ data object PollScreen : Screen
 data object AuthScreen : Screen
 
 data object SharedAccountsScreen : Screen
+
+data class SharedAccountDetailScreen(
+    val sharedAccountId: UUID
+) : Screen

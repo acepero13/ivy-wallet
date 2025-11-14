@@ -500,4 +500,10 @@
     <string name="no_shared_accounts">No Shared Accounts</string>
     <string name="no_shared_accounts_description">Create a shared account to track expenses with your partner, family, or friends</string>
     <string name="create_shared_account">Create Shared Account</string>
+    <string name="no_shared_account_transactions_description">No transactions yet. Add a transaction to get started.</string>
+    <string name="add_transaction">Add Transaction</string>
+    <string name="amount">Amount</string>
+    <string name="title">Title</string>
+    <string name="optional">Optional</string>
+    <string name="cancel">Cancel</string>
 </resources>

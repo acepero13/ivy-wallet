@@ -32,25 +32,14 @@ import javax.inject.Singleton
 @Singleton
 class SyncManager @Inject constructor(
     private val syncQueue: SyncQueue,
+    private val remoteService: RemoteService,
     private val dispatchersProvider: DispatchersProvider,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + dispatchersProvider.io)
     private var syncJob: Job? = null
-    private var remoteService: RemoteService? = null
 
     private val _syncState = MutableStateFlow<SyncState>(SyncState.Idle)
     val syncState: StateFlow<SyncState> = _syncState.asStateFlow()
-
-    /**
-     * Set the remote service implementation.
-     * This is separated from the constructor to allow lazy initialization
-     * after Firebase/backend is configured.
-     *
-     * @param service The remote service to use for sync
-     */
-    fun setRemoteService(service: RemoteService) {
-        remoteService = service
-    }
 
     /**
      * Enqueue a new operation to be synced
@@ -103,8 +92,7 @@ class SyncManager @Inject constructor(
      * Process all pending operations in the queue
      */
     private suspend fun processQueue() {
-        val service = remoteService
-        if (service == null || !service.isAvailable()) {
+        if (!remoteService.isAvailable()) {
             _syncState.value = SyncState.Offline
             return
         }
@@ -114,7 +102,7 @@ class SyncManager @Inject constructor(
         var operation = syncQueue.dequeue()
         while (operation != null) {
             try {
-                val result = service.pushOperation(operation)
+                val result = remoteService.pushOperation(operation)
                 when (result) {
                     is SyncResult.Success -> {
                         syncQueue.markCompleted(operation.id)
@@ -142,8 +130,6 @@ class SyncManager @Inject constructor(
      * Pull changes from remote service for all entity types
      */
     private suspend fun pullChanges() {
-        val service = remoteService ?: return
-
         // TODO: Track last sync timestamps per entity type
         // For now, we'll pull all entity types
         // This will be expanded in future PRs when we have actual entities
@@ -158,8 +144,8 @@ class SyncManager @Inject constructor(
     suspend fun subscribeToChanges(
         entityType: String,
         onChanges: (List<SyncOperation>) -> Unit
-    ): SyncSubscription? {
-        return remoteService?.subscribeToChanges(entityType, onChanges)
+    ): SyncSubscription {
+        return remoteService.subscribeToChanges(entityType, onChanges)
     }
 
     /**

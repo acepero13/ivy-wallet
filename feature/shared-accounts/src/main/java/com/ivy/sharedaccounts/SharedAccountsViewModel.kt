@@ -14,6 +14,8 @@ import com.ivy.data.DataWriteEvent
 import com.ivy.data.model.SharedAccount
 import com.ivy.data.model.SharedAccountId
 import com.ivy.data.repository.SharedAccountRepository
+import com.ivy.navigation.Navigation
+import com.ivy.navigation.SharedAccountDetailScreen
 import com.ivy.ui.ComposeViewModel
 import com.ivy.wallet.domain.action.settings.BaseCurrencyAct
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -32,6 +34,7 @@ class SharedAccountsViewModel @Inject constructor(
     private val sharedAccountRepository: SharedAccountRepository,
     private val baseCurrencyAct: BaseCurrencyAct,
     private val dataObserver: DataObserver,
+    private val navigation: Navigation,
 ) : ComposeViewModel<SharedAccountsState, SharedAccountsEvent>() {
 
     private var sharedAccounts by mutableStateOf<List<SharedAccount>>(emptyList())
@@ -101,8 +104,9 @@ class SharedAccountsViewModel @Inject constructor(
     }
 
     private fun onSharedAccountClick(accountId: SharedAccountId) {
-        // TODO: Navigate to shared account details/transactions screen
-        // This will be implemented in a future PR
+        viewModelScope.launch {
+            navigation.navigateTo(SharedAccountDetailScreen(sharedAccountId = accountId.value))
+        }
     }
 
     private fun onCreateSharedAccount() {

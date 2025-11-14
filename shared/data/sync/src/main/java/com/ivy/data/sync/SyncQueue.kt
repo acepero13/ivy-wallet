@@ -57,18 +57,20 @@ class SyncQueue @Inject constructor() {
         val nextOp = _operations.value.firstOrNull { it.status == SyncOperationStatus.PENDING }
 
         if (nextOp != null) {
+            val updatedOp = nextOp.copy(status = SyncOperationStatus.IN_PROGRESS)
             _operations.update { current ->
                 current.map { op ->
                     if (op.id == nextOp.id) {
-                        op.copy(status = SyncOperationStatus.IN_PROGRESS)
+                        updatedOp
                     } else {
                         op
                     }
                 }
             }
+            return@withLock updatedOp
         }
 
-        nextOp
+        return@withLock null
     }
 
     /**
@@ -90,17 +92,21 @@ class SyncQueue @Inject constructor() {
      */
     suspend fun markFailed(operationId: String, error: Throwable) = mutex.withLock {
         _operations.update { current ->
-            current.mapNotNull { op ->
+            current.map { op ->
                 if (op.id == operationId) {
-                    if (op.retryCount < maxRetries) {
+                    val newRetryCount = op.retryCount + 1
+                    if (newRetryCount < maxRetries) {
                         // Retry with exponential backoff
                         op.copy(
                             status = SyncOperationStatus.PENDING,
-                            retryCount = op.retryCount + 1
+                            retryCount = newRetryCount
                         )
                     } else {
                         // Max retries exceeded, mark as permanently failed
-                        op.copy(status = SyncOperationStatus.FAILED)
+                        op.copy(
+                            status = SyncOperationStatus.FAILED,
+                            retryCount = newRetryCount
+                        )
                     }
                 } else {
                     op

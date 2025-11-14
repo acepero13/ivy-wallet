@@ -14,6 +14,13 @@ dependencies {
     implementation(libs.bundles.kotlin)
     implementation(libs.bundles.hilt)
 
+    // Firebase
+    implementation(libs.firebase.firestore)
+    implementation(libs.firebase.auth)
+
+    // Logging
+    implementation(libs.timber)
+
     testImplementation(libs.bundles.testing)
     testImplementation(libs.kotest.assertions)
     testImplementation(libs.kotest.property)
