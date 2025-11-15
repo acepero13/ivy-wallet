@@ -4,6 +4,8 @@ import com.ivy.data.model.Account
 import com.ivy.data.model.AccountId
 import com.ivy.data.model.Category
 import com.ivy.data.model.CategoryId
+import com.ivy.data.model.Invitation
+import com.ivy.data.model.InvitationId
 import com.ivy.data.model.SharedAccount
 import com.ivy.data.model.SharedAccountId
 import com.ivy.data.model.SharedTransaction
@@ -48,6 +50,10 @@ sealed interface DataWriteEvent {
     sealed interface SharedTransactionChange : DataWriteEvent
     data class SaveSharedTransactions(val transactions: List<SharedTransaction>) : SharedTransactionChange
     data class DeleteSharedTransactions(val operation: DeleteOperation<SharedTransactionId>) : SharedTransactionChange
+
+    sealed interface InvitationChange : DataWriteEvent
+    data class SaveInvitation(val invitation: Invitation) : InvitationChange
+    data class DeleteInvitation(val operation: DeleteOperation<InvitationId>) : InvitationChange
 }
 
 sealed interface DeleteOperation<out Id : UniqueId> {

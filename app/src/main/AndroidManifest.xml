@@ -47,6 +47,24 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
 
+            <!-- Deep link for invitation acceptance -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <!-- Custom scheme -->
+                <data
+                    android:scheme="ivywallet"
+                    android:host="invite" />
+
+                <!-- HTTPS scheme for web links -->
+                <data
+                    android:scheme="https"
+                    android:host="ivywallet.app"
+                    android:pathPrefix="/invite" />
+            </intent-filter>
+
             <meta-data
                 android:name="android.app.shortcuts"
                 android:resource="@xml/shortcuts" />
