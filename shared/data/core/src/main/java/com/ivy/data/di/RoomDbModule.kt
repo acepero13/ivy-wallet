@@ -6,10 +6,13 @@ import com.ivy.data.db.dao.read.AccountDao
 import com.ivy.data.db.dao.read.BudgetDao
 import com.ivy.data.db.dao.read.CategoryDao
 import com.ivy.data.db.dao.read.ExchangeRatesDao
+import com.ivy.data.db.dao.read.InvitationDao
 import com.ivy.data.db.dao.read.LoanDao
 import com.ivy.data.db.dao.read.LoanRecordDao
 import com.ivy.data.db.dao.read.PlannedPaymentRuleDao
 import com.ivy.data.db.dao.read.SettingsDao
+import com.ivy.data.db.dao.read.SharedAccountDao
+import com.ivy.data.db.dao.read.SharedTransactionDao
 import com.ivy.data.db.dao.read.TagAssociationDao
 import com.ivy.data.db.dao.read.TagDao
 import com.ivy.data.db.dao.read.TransactionDao
@@ -18,10 +21,13 @@ import com.ivy.data.db.dao.write.WriteAccountDao
 import com.ivy.data.db.dao.write.WriteBudgetDao
 import com.ivy.data.db.dao.write.WriteCategoryDao
 import com.ivy.data.db.dao.write.WriteExchangeRatesDao
+import com.ivy.data.db.dao.write.WriteInvitationDao
 import com.ivy.data.db.dao.write.WriteLoanDao
 import com.ivy.data.db.dao.write.WriteLoanRecordDao
 import com.ivy.data.db.dao.write.WritePlannedPaymentRuleDao
 import com.ivy.data.db.dao.write.WriteSettingsDao
+import com.ivy.data.db.dao.write.WriteSharedAccountDao
+import com.ivy.data.db.dao.write.WriteSharedTransactionDao
 import com.ivy.data.db.dao.write.WriteTagAssociationDao
 import com.ivy.data.db.dao.write.WriteTagDao
 import com.ivy.data.db.dao.write.WriteTransactionDao
@@ -161,5 +167,35 @@ object RoomDbModule {
     @Provides
     fun provideWriteTagAssociationDao(db: IvyRoomDatabase): WriteTagAssociationDao {
         return db.writeTagAssociationDao
+    }
+
+    @Provides
+    fun provideSharedAccountDao(db: IvyRoomDatabase): SharedAccountDao {
+        return db.sharedAccountDao
+    }
+
+    @Provides
+    fun provideSharedTransactionDao(db: IvyRoomDatabase): SharedTransactionDao {
+        return db.sharedTransactionDao
+    }
+
+    @Provides
+    fun provideInvitationDao(db: IvyRoomDatabase): InvitationDao {
+        return db.invitationDao
+    }
+
+    @Provides
+    fun provideWriteSharedAccountDao(db: IvyRoomDatabase): WriteSharedAccountDao {
+        return db.writeSharedAccountDao
+    }
+
+    @Provides
+    fun provideWriteSharedTransactionDao(db: IvyRoomDatabase): WriteSharedTransactionDao {
+        return db.writeSharedTransactionDao
+    }
+
+    @Provides
+    fun provideWriteInvitationDao(db: IvyRoomDatabase): WriteInvitationDao {
+        return db.writeInvitationDao
     }
 }

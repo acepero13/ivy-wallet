@@ -100,6 +100,7 @@ datastore = { module = "androidx.datastore:datastore-preferences", version = "1.
 # Hilt
 hilt = { module = "com.google.dagger:hilt-android", version.ref = "hilt" }
 hilt-work = { module = "androidx.hilt:hilt-work", version = "1.2.0" }
+hilt-navigation-compose = { module = "androidx.hilt:hilt-navigation-compose", version = "1.2.0" }
 hilt-compiler = { module = "com.google.dagger:hilt-android-compiler", version.ref = "hilt" }
 hilt-gradle-plugin = { module = "com.google.dagger:hilt-android-gradle-plugin", version.ref = "hilt" }
 
@@ -223,7 +224,8 @@ firebase = [
 ]
 hilt = [
     "hilt",
-    "hilt-work"
+    "hilt-work",
+    "hilt-navigation-compose"
 ]
 room = [
     "room-runtime",
