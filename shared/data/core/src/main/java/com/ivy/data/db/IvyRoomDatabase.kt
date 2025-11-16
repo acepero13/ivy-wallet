@@ -167,6 +167,7 @@ abstract class IvyRoomDatabase : RoomDatabase() {
                     DB_NAME
                 )
                 .addMigrations(*migrations())
+                .fallbackToDestructiveMigration()
                 .build()
         }
     }

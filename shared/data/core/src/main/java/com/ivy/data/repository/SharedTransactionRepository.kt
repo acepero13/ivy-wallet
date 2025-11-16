@@ -28,8 +28,8 @@ class SharedTransactionRepository @Inject constructor(
 
     suspend fun findById(id: SharedTransactionId): SharedTransaction? = memo.findById(
         id = id,
-        findByIdOperation = {
-            sharedTransactionDao.findById(id.value)?.let {
+        findByIdOperation = { transactionId ->
+            sharedTransactionDao.findById(transactionId.value)?.let {
                 with(mapper) { it.toDomain() }.getOrNull()
             }
         }

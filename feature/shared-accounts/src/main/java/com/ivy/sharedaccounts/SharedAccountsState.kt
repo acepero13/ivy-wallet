@@ -10,5 +10,6 @@ data class SharedAccountsState(
     val sharedAccounts: ImmutableList<SharedAccount> = persistentListOf(),
     val baseCurrency: String = "USD",
     val isLoading: Boolean = true,
-    val currentUserUid: String? = null
+    val currentUserUid: String? = null,
+    val showCreateModal: Boolean = false
 )

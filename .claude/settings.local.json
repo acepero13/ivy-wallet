@@ -3,7 +3,13 @@
     "allow": [
       "Bash(mkdir:*)",
       "Bash(./gradlew :shared:data:sync:assemble:*)",
-      "Bash(./gradlew:*)"
+      "Bash(./gradlew:*)",
+      "Bash(adb install:*)",
+      "Bash(adb logcat:*)",
+      "Bash(adb shell:*)",
+      "Bash(adb exec-out run-as com.ivy.wallet.debug cat:*)",
+      "Bash(/tmp/ivywallet.db)",
+      "Bash(sqlite3:*)"
     ],
     "deny": [],
     "ask": []

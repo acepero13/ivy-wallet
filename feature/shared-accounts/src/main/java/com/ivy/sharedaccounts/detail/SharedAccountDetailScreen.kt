@@ -65,14 +65,22 @@ import java.util.UUID
 fun BoxWithConstraintsScope.SharedAccountDetailScreen(screen: SharedAccountDetailScreen) {
     val viewModel: SharedAccountDetailViewModel = screenScopedViewModel()
 
-    LaunchedEffect(screen) {
-        viewModel.setSharedAccountId(SharedAccountId(screen.sharedAccountId))
+    LaunchedEffect(screen.sharedAccountId) {
+        android.util.Log.d("SharedAccountDetailScreen", "LaunchedEffect triggered, loading data")
+        val accountId = SharedAccountId(screen.sharedAccountId)
+        viewModel.setSharedAccountId(accountId)
+        viewModel.loadDataForAccount(accountId)
     }
 
-    val state = viewModel.uiState()
+    ScreenContent(viewModel = viewModel)
+}
+
+@Composable
+private fun BoxWithConstraintsScope.ScreenContent(viewModel: SharedAccountDetailViewModel) {
+    val uiState = viewModel.uiState()
 
     UI(
-        state = state,
+        state = uiState,
         onEvent = viewModel::onEvent
     )
 }

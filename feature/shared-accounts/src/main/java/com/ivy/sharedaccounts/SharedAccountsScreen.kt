@@ -167,6 +167,18 @@ private fun BoxWithConstraintsScope.UI(
             }
         }
     }
+
+    // Create Shared Account Modal
+    CreateSharedAccountModal(
+        visible = state.showCreateModal,
+        baseCurrency = state.baseCurrency,
+        onCreateAccount = { name, currency ->
+            onEvent(SharedAccountsEvent.OnCreateAccount(name, currency))
+        },
+        onDismiss = {
+            onEvent(SharedAccountsEvent.OnDismissCreateModal)
+        }
+    )
 }
 
 @Composable

@@ -13,6 +13,8 @@ import com.ivy.data.DataObserver
 import com.ivy.data.DataWriteEvent
 import com.ivy.data.model.SharedAccount
 import com.ivy.data.model.SharedAccountId
+import com.ivy.data.model.primitive.AssetCode
+import com.ivy.data.model.primitive.NotBlankTrimmedString
 import com.ivy.data.repository.SharedAccountRepository
 import com.ivy.navigation.Navigation
 import com.ivy.navigation.SharedAccountDetailScreen
@@ -23,6 +25,8 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import java.time.Instant
+import java.util.UUID
 import javax.inject.Inject
 
 @Stable
@@ -41,6 +45,7 @@ class SharedAccountsViewModel @Inject constructor(
     private var baseCurrency by mutableStateOf("")
     private var isLoading by mutableStateOf(true)
     private var currentUserUid by mutableStateOf<String?>(null)
+    private var showCreateModal by mutableStateOf(false)
 
     init {
         viewModelScope.launch {
@@ -67,7 +72,8 @@ class SharedAccountsViewModel @Inject constructor(
             sharedAccounts = sharedAccounts.toImmutableList(),
             baseCurrency = baseCurrency,
             isLoading = isLoading,
-            currentUserUid = currentUserUid
+            currentUserUid = currentUserUid,
+            showCreateModal = showCreateModal
         )
     }
 
@@ -75,6 +81,8 @@ class SharedAccountsViewModel @Inject constructor(
         when (event) {
             is SharedAccountsEvent.OnSharedAccountClick -> onSharedAccountClick(event.accountId)
             SharedAccountsEvent.OnCreateSharedAccount -> onCreateSharedAccount()
+            SharedAccountsEvent.OnDismissCreateModal -> onDismissCreateModal()
+            is SharedAccountsEvent.OnCreateAccount -> onCreateAccount(event.name, event.currency)
         }
     }
 
@@ -110,7 +118,33 @@ class SharedAccountsViewModel @Inject constructor(
     }
 
     private fun onCreateSharedAccount() {
-        // TODO: Show create shared account modal/screen
-        // This will be implemented in a future PR
+        showCreateModal = true
+    }
+
+    private fun onDismissCreateModal() {
+        showCreateModal = false
+    }
+
+    private fun onCreateAccount(name: String, currency: String) {
+        viewModelScope.launch {
+            // Create the account with proper types
+            val trimmedName = NotBlankTrimmedString.unsafe(name)
+            val assetCode = AssetCode.unsafe(currency)
+            val userUid = currentUserUid ?: "local-user"
+
+            val newAccount = SharedAccount(
+                id = SharedAccountId(UUID.randomUUID()),
+                name = trimmedName,
+                currency = assetCode,
+                owners = listOf(userUid),
+                createdBy = userUid,
+                createdAt = Instant.now(),
+                updatedAt = Instant.now()
+            )
+
+            sharedAccountRepository.save(newAccount)
+            showCreateModal = false
+            loadSharedAccounts()
+        }
     }
 }

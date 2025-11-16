@@ -26,8 +26,8 @@ class SharedAccountRepository @Inject constructor(
 
     suspend fun findById(id: SharedAccountId): SharedAccount? = memo.findById(
         id = id,
-        findByIdOperation = {
-            sharedAccountDao.findById(id.value)?.let {
+        findByIdOperation = { accountId ->
+            sharedAccountDao.findById(accountId.value)?.let {
                 with(mapper) { it.toDomain() }.getOrNull()
             }
         }

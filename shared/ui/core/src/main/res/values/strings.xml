@@ -506,4 +506,6 @@
     <string name="title">Title</string>
     <string name="optional">Optional</string>
     <string name="cancel">Cancel</string>
+    <string name="shared_account_name_hint">e.g., Family Expenses, Vacation Fund</string>
+    <string name="shared_account_info">This account can be shared with others to track expenses together</string>
 </resources>
