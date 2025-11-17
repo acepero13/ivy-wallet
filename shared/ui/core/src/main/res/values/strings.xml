@@ -507,5 +507,7 @@
     <string name="optional">Optional</string>
     <string name="cancel">Cancel</string>
     <string name="shared_account_name_hint">e.g., Family Expenses, Vacation Fund</string>
+    <string name="use_shared_account_by_default">Use shared account by default</string>
+    <string name="use_shared_account_by_default_description">New transactions will automatically be added to your default shared account</string>
     <string name="shared_account_info">This account can be shared with others to track expenses together</string>
 </resources>

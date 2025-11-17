@@ -20,6 +20,8 @@ class SharedTransactionRepository @Inject constructor(
     private val writeSharedTransactionDao: WriteSharedTransactionDao,
     private val dispatchersProvider: DispatchersProvider,
     memoFactory: RepositoryMemoFactory,
+    private val transactionRepository: dagger.Lazy<TransactionRepository>,
+    private val sharedAccountRepository: dagger.Lazy<SharedAccountRepository>,
 ) {
     private val memo = memoFactory.createMemo(
         getDataWriteSaveEvent = DataWriteEvent::SaveSharedTransactions,
@@ -92,12 +94,74 @@ class SharedTransactionRepository @Inject constructor(
         writeSharedTransactionDao.save(
             with(mapper) { it.toEntity() }
         )
+
+        // Also save to regular transaction repository if linked account exists
+        saveToRegularTransactions(value)
+    }
+
+    private suspend fun saveToRegularTransactions(sharedTrx: SharedTransaction) {
+        val sharedAccount = sharedAccountRepository.get().findById(sharedTrx.sharedAccountId) ?: return
+        val linkedAccountId = sharedAccount.linkedAccountId ?: return
+
+        // Convert SharedTransaction to regular Transaction
+        val regularTransaction = when (sharedTrx.type) {
+            com.ivy.data.model.SharedTransactionType.INCOME -> {
+                com.ivy.data.model.Income(
+                    id = com.ivy.data.model.TransactionId(sharedTrx.id.value),
+                    title = sharedTrx.title,
+                    description = sharedTrx.description,
+                    category = sharedTrx.category,
+                    time = sharedTrx.time,
+                    settled = true,
+                    metadata = com.ivy.data.model.TransactionMetadata(
+                        recurringRuleId = null,
+                        paidForDateTime = null,
+                        loanId = null,
+                        loanRecordId = null
+                    ),
+                    tags = emptyList(),
+                    value = com.ivy.data.model.PositiveValue(
+                        amount = com.ivy.data.model.primitive.PositiveDouble.unsafe(sharedTrx.amount),
+                        asset = sharedAccount.currency
+                    ),
+                    account = linkedAccountId
+                )
+            }
+            com.ivy.data.model.SharedTransactionType.EXPENSE -> {
+                com.ivy.data.model.Expense(
+                    id = com.ivy.data.model.TransactionId(sharedTrx.id.value),
+                    title = sharedTrx.title,
+                    description = sharedTrx.description,
+                    category = sharedTrx.category,
+                    time = sharedTrx.time,
+                    settled = true,
+                    metadata = com.ivy.data.model.TransactionMetadata(
+                        recurringRuleId = null,
+                        paidForDateTime = null,
+                        loanId = null,
+                        loanRecordId = null
+                    ),
+                    tags = emptyList(),
+                    value = com.ivy.data.model.PositiveValue(
+                        amount = com.ivy.data.model.primitive.PositiveDouble.unsafe(sharedTrx.amount),
+                        asset = sharedAccount.currency
+                    ),
+                    account = linkedAccountId
+                )
+            }
+        }
+
+        // Save to regular transaction repository
+        transactionRepository.get().save(regularTransaction)
     }
 
     suspend fun saveMany(values: List<SharedTransaction>): Unit = memo.saveMany(values) {
         writeSharedTransactionDao.saveMany(
             it.map { with(mapper) { it.toEntity() } }
         )
+
+        // Also save all to regular transactions if linked accounts exist
+        values.forEach { saveToRegularTransactions(it) }
     }
 
     suspend fun deleteById(id: SharedTransactionId): Unit = memo.deleteById(id) {

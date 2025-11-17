@@ -19,4 +19,5 @@ sealed interface SettingsEvent {
     data object DeleteCloudUserData : SettingsEvent
     data object DeleteAllUserData : SettingsEvent
     data object SwitchLanguage : SettingsEvent
+    data class SetUseSharedAccountByDefault(val useSharedAccountByDefault: Boolean) : SettingsEvent
 }

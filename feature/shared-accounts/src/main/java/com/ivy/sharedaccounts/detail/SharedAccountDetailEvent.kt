@@ -7,4 +7,5 @@ sealed interface SharedAccountDetailEvent {
     data class OnTransactionClick(val transactionId: SharedTransactionId) : SharedAccountDetailEvent
     data object OnBack : SharedAccountDetailEvent
     data object OnEditAccount : SharedAccountDetailEvent
+    data object OnShareInvite : SharedAccountDetailEvent
 }

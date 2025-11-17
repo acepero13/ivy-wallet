@@ -107,6 +107,8 @@ class EditTransactionViewModel @Inject constructor(
     private val timeConverter: TimeConverter,
     private val timeProvider: TimeProvider,
     private val dateTimePicker: DateTimePicker,
+    private val sharedAccountRepository: com.ivy.data.repository.SharedAccountRepository,
+    private val sharedTransactionRepository: com.ivy.data.repository.SharedTransactionRepository,
 ) : ComposeViewModel<EditTransactionViewState, EditTransactionViewEvent>() {
 
     private var transactionType by mutableStateOf(TransactionType.EXPENSE)
@@ -146,6 +148,11 @@ class EditTransactionViewModel @Inject constructor(
     private var tagSearchJob: Job? = null
     private val tagSearchDebounceTimeInMills: Long = 500
 
+    // Shared account support
+    private var isSharedTransaction by mutableStateOf(false)
+    private var sharedAccounts by mutableStateOf<ImmutableList<com.ivy.data.model.SharedAccount>>(persistentListOf())
+    private var selectedSharedAccount by mutableStateOf<com.ivy.data.model.SharedAccount?>(null)
+
     fun start(screen: EditTransactionScreen) {
         viewModelScope.launch {
             editMode = screen.initialTransactionId != null
@@ -160,6 +167,24 @@ class EditTransactionViewModel @Inject constructor(
                 return@launch
             }
             accounts = getAccounts
+
+            // Load shared accounts
+            sharedAccounts = sharedAccountRepository.findAll().toImmutableList()
+
+            // Check if user wants to use shared account by default
+            val useSharedByDefault = sharedPrefs.getBoolean(SharedPrefs.USE_SHARED_ACCOUNT_BY_DEFAULT, false)
+            if (useSharedByDefault && sharedAccounts.isNotEmpty()) {
+                isSharedTransaction = true
+
+                // Try to load the default shared account
+                val defaultSharedAccountId = sharedPrefs.getString(SharedPrefs.DEFAULT_SHARED_ACCOUNT_ID, null)
+                selectedSharedAccount = if (defaultSharedAccountId != null) {
+                    sharedAccounts.find { it.id.value.toString() == defaultSharedAccountId }
+                        ?: sharedAccounts.first()
+                } else {
+                    sharedAccounts.first()
+                }
+            }
 
             categories = sortCategories()
 
@@ -207,7 +232,10 @@ class EditTransactionViewModel @Inject constructor(
             backgroundProcessingStarted = getBackgroundProcessingStarted(),
             customExchangeRateState = getCustomExchangeRateState(),
             tags = getTags(),
-            transactionAssociatedTags = getTransactionAssociatedTags()
+            transactionAssociatedTags = getTransactionAssociatedTags(),
+            isSharedTransaction = isSharedTransaction,
+            sharedAccounts = sharedAccounts,
+            selectedSharedAccount = selectedSharedAccount
         )
     }
 
@@ -337,7 +365,25 @@ class EditTransactionViewModel @Inject constructor(
             is EditTransactionViewEvent.SetHasChanges -> setHasChanges(event.hasChangesValue)
             is EditTransactionViewEvent.UpdateExchangeRate -> updateExchangeRate(event.exRate)
             is EditTransactionViewEvent.TagEvent -> handleTagEvent(event)
+            is EditTransactionViewEvent.OnToggleSharedTransaction -> onToggleSharedTransaction(event.isShared)
+            is EditTransactionViewEvent.OnSharedAccountChanged -> onSharedAccountChanged(event.sharedAccount)
         }
+    }
+
+    private fun onToggleSharedTransaction(isShared: Boolean) {
+        isSharedTransaction = isShared
+        if (isShared && selectedSharedAccount == null && sharedAccounts.isNotEmpty()) {
+            // Auto-select first shared account if available
+            selectedSharedAccount = sharedAccounts.first()
+        }
+        setHasChanges(true)
+    }
+
+    private fun onSharedAccountChanged(sharedAccount: com.ivy.data.model.SharedAccount) {
+        selectedSharedAccount = sharedAccount
+        // Update currency based on shared account
+        currency = sharedAccount.currency.code
+        setHasChanges(true)
     }
 
     private fun handleTagEvent(event: EditTransactionViewEvent.TagEvent) {
@@ -706,49 +752,55 @@ class EditTransactionViewModel @Inject constructor(
     private suspend fun saveInternal(closeScreen: Boolean) {
         try {
             ioThread {
-                val amount = amount.toBigDecimal()
+                // Check if this should be saved as a shared transaction
+                if (isSharedTransaction && selectedSharedAccount != null) {
+                    saveSharedTransaction()
+                } else {
+                    // Save as regular transaction
+                    val amount = amount.toBigDecimal()
 
-                loadedTransaction = loadedTransaction().copy(
-                    accountId = account?.id ?: error("no accountId"),
-                    toAccountId = toAccount?.id,
-                    toAmount = customExchangeRateState.convertedAmount?.toBigDecimal()
-                        ?: amount,
-                    title = title?.trim(),
-                    description = description?.trim(),
-                    amount = amount,
-                    type = transactionType,
-                    dueDate = dueDate,
-                    paidFor = paidHistory,
-                    dateTime = when {
-                        loadedTransaction().dateTime == null &&
-                                dueDate == null -> {
-                            timeProvider.utcNow()
-                        }
+                    loadedTransaction = loadedTransaction().copy(
+                        accountId = account?.id ?: error("no accountId"),
+                        toAccountId = toAccount?.id,
+                        toAmount = customExchangeRateState.convertedAmount?.toBigDecimal()
+                            ?: amount,
+                        title = title?.trim(),
+                        description = description?.trim(),
+                        amount = amount,
+                        type = transactionType,
+                        dueDate = dueDate,
+                        paidFor = paidHistory,
+                        dateTime = when {
+                            loadedTransaction().dateTime == null &&
+                                    dueDate == null -> {
+                                timeProvider.utcNow()
+                            }
 
-                        else -> loadedTransaction().dateTime
-                    },
-                    categoryId = category?.id?.value,
-                    isSynced = false
-                )
-
-                if (loadedTransaction?.loanId != null) {
-                    loanTransactionsLogic.updateAssociatedLoanData(
-                        loadedTransaction!!.copy(),
-                        onBackgroundProcessingStart = {
-                            backgroundProcessingStarted = true
+                            else -> loadedTransaction().dateTime
                         },
-                        onBackgroundProcessingEnd = {
-                            backgroundProcessingStarted = false
-                        },
-                        accountsChanged = accountsChanged
+                        categoryId = category?.id?.value,
+                        isSynced = false
                     )
 
-                    // Reset Counter
-                    accountsChanged = false
-                }
+                    if (loadedTransaction?.loanId != null) {
+                        loanTransactionsLogic.updateAssociatedLoanData(
+                            loadedTransaction!!.copy(),
+                            onBackgroundProcessingStart = {
+                                backgroundProcessingStarted = true
+                            },
+                            onBackgroundProcessingEnd = {
+                                backgroundProcessingStarted = false
+                            },
+                            accountsChanged = accountsChanged
+                        )
 
-                loadedTransaction().toDomain(transactionMapper)?.let {
-                    transactionRepo.save(it)
+                        // Reset Counter
+                        accountsChanged = false
+                    }
+
+                    loadedTransaction().toDomain(transactionMapper)?.let {
+                        transactionRepo.save(it)
+                    }
                 }
 
                 refreshWidget(WalletBalanceWidgetReceiver::class.java)
@@ -760,6 +812,87 @@ class EditTransactionViewModel @Inject constructor(
         } catch (e: Exception) {
             e.printStackTrace()
         }
+    }
+
+    private suspend fun saveSharedTransaction() {
+        val sharedAccount = selectedSharedAccount ?: return
+
+        // Convert transaction type to SharedTransactionType
+        val sharedType = when (transactionType) {
+            TransactionType.INCOME -> com.ivy.data.model.SharedTransactionType.INCOME
+            TransactionType.EXPENSE -> com.ivy.data.model.SharedTransactionType.EXPENSE
+            TransactionType.TRANSFER -> {
+                // Transfers not supported for shared transactions
+                toaster.show("Transfers are not supported for shared accounts")
+                return
+            }
+        }
+
+        // First, save as a regular transaction (so it appears in normal Ivy Wallet views)
+        val amount = amount.toBigDecimal()
+
+        loadedTransaction = loadedTransaction().copy(
+            accountId = account?.id ?: error("no accountId"),
+            toAccountId = toAccount?.id,
+            toAmount = customExchangeRateState.convertedAmount?.toBigDecimal()
+                ?: amount,
+            title = title?.trim(),
+            description = description?.trim(),
+            amount = amount,
+            type = transactionType,
+            dueDate = dueDate,
+            paidFor = paidHistory,
+            dateTime = when {
+                loadedTransaction().dateTime == null &&
+                        dueDate == null -> {
+                    timeProvider.utcNow()
+                }
+
+                else -> loadedTransaction().dateTime
+            },
+            categoryId = category?.id?.value,
+            isSynced = false
+        )
+
+        if (loadedTransaction?.loanId != null) {
+            loanTransactionsLogic.updateAssociatedLoanData(
+                loadedTransaction!!.copy(),
+                onBackgroundProcessingStart = {
+                    backgroundProcessingStarted = true
+                },
+                onBackgroundProcessingEnd = {
+                    backgroundProcessingStarted = false
+                },
+                accountsChanged = accountsChanged
+            )
+
+            // Reset Counter
+            accountsChanged = false
+        }
+
+        loadedTransaction().toDomain(transactionMapper)?.let {
+            transactionRepo.save(it)
+        }
+
+        // Then, also save to shared transactions repository
+        val sharedTransaction = com.ivy.data.model.SharedTransaction(
+            id = com.ivy.data.model.SharedTransactionId(UUID.randomUUID()),
+            sharedAccountId = sharedAccount.id,
+            type = sharedType,
+            amount = this.amount,
+            title = title?.let { com.ivy.data.model.primitive.NotBlankTrimmedString.unsafe(it) },
+            description = description?.let { com.ivy.data.model.primitive.NotBlankTrimmedString.unsafe(it) },
+            category = category?.id,
+            time = dateTime ?: timeProvider.utcNow(),
+            createdBy = "local-user", // TODO: Get actual Firebase UID
+            createdAt = timeProvider.utcNow(),
+            updatedAt = timeProvider.utcNow(),
+            updatedBy = "local-user", // TODO: Get actual Firebase UID
+            deleted = false
+        )
+
+        sharedTransactionRepository.save(sharedTransaction)
+        toaster.show("Saved to ${sharedAccount.name.value}")
     }
 
     @JvmName("setHasChangesMethod")

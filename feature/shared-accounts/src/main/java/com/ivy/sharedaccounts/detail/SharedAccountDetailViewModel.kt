@@ -11,12 +11,16 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.viewModelScope
 import com.ivy.data.DataObserver
 import com.ivy.data.DataWriteEvent
+import com.ivy.data.auth.AuthRepository
+import com.ivy.data.auth.AuthUser
 import com.ivy.data.model.SharedAccount
 import com.ivy.data.model.SharedAccountId
 import com.ivy.data.model.SharedTransaction
 import com.ivy.data.model.SharedTransactionType
 import com.ivy.data.repository.SharedAccountRepository
 import com.ivy.data.repository.SharedTransactionRepository
+import com.ivy.domain.usecase.invitation.CreateInvitationUseCase
+import com.ivy.domain.usecase.invitation.GenerateInviteLinkUseCase
 import com.ivy.ui.ComposeViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -36,6 +40,9 @@ class SharedAccountDetailViewModel @Inject constructor(
     private val sharedAccountRepository: SharedAccountRepository,
     private val sharedTransactionRepository: SharedTransactionRepository,
     private val dataObserver: DataObserver,
+    private val authRepository: AuthRepository,
+    private val createInvitationUseCase: CreateInvitationUseCase,
+    private val generateInviteLinkUseCase: GenerateInviteLinkUseCase,
 ) : ComposeViewModel<SharedAccountDetailState, SharedAccountDetailEvent>() {
 
     private var sharedAccountId by mutableStateOf<SharedAccountId?>(null)
@@ -91,7 +98,118 @@ class SharedAccountDetailViewModel @Inject constructor(
             is SharedAccountDetailEvent.OnEditAccount -> {
                 // TODO: Navigate to edit account screen
             }
+            is SharedAccountDetailEvent.OnShareInvite -> {
+                shareInvite()
+            }
         }
+    }
+
+    private fun shareInvite() {
+        val account = sharedAccount ?: return
+
+        viewModelScope.launch {
+            try {
+                // Get current user
+                val currentUser = authRepository.getCurrentUserOnce()
+                val userUid = when (currentUser) {
+                    is com.ivy.data.auth.AuthResult.Success -> currentUser.user.uid
+                    else -> {
+                        android.util.Log.e("SharedAccountDetail", "User not authenticated")
+                        // Fallback to local user
+                        "local-user"
+                    }
+                }
+
+                // Create invitation with a placeholder email (can be updated when sharing)
+                val invitationResult = createInvitationUseCase(
+                    sharedAccountId = account.id,
+                    inviterUid = userUid,
+                    inviteeEmail = "invite@placeholder.com", // Placeholder, user can share with anyone
+                    expirationDays = 7
+                )
+
+                invitationResult.fold(
+                    ifLeft = { error ->
+                        android.util.Log.e("SharedAccountDetail", "Failed to create invitation: $error")
+                        // Fallback to simple share
+                        shareSimpleInvite(account)
+                    },
+                    ifRight = { invitation ->
+                        // Generate deep link
+                        val linkResult = generateInviteLinkUseCase(invitation)
+                        linkResult.fold(
+                            ifLeft = { error ->
+                                android.util.Log.e("SharedAccountDetail", "Failed to generate link: $error")
+                                shareSimpleInvite(account)
+                            },
+                            ifRight = { deepLink ->
+                                // Create invitation text with proper token
+                                val inviteText = """
+                                    Join my shared account on Ivy Wallet!
+
+                                    Account: ${account.name.value}
+
+                                    Click this link to accept the invitation:
+                                    $deepLink
+
+                                    Or use this invitation code in the app:
+                                    ${invitation.token}
+
+                                    Download Ivy Wallet: https://github.com/Ivy-Apps/ivy-wallet
+                                """.trimIndent()
+
+                                // Create Android share intent
+                                val shareIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                                    type = "text/plain"
+                                    putExtra(android.content.Intent.EXTRA_SUBJECT, "Join ${account.name.value} on Ivy Wallet")
+                                    putExtra(android.content.Intent.EXTRA_TEXT, inviteText)
+                                    addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                                }
+
+                                context.startActivity(
+                                    android.content.Intent.createChooser(shareIntent, "Share invitation via").apply {
+                                        addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                                    }
+                                )
+                            }
+                        )
+                    }
+                )
+            } catch (e: Exception) {
+                android.util.Log.e("SharedAccountDetail", "Error sharing invite", e)
+                shareSimpleInvite(account)
+            }
+        }
+    }
+
+    private fun shareSimpleInvite(account: SharedAccount) {
+        val accountId = account.id.value.toString()
+
+        // Fallback simple invitation text
+        val inviteText = """
+            Join my shared account on Ivy Wallet!
+
+            Account: ${account.name.value}
+
+            To join, install Ivy Wallet and use this invitation code:
+            $accountId
+
+            Download Ivy Wallet: https://github.com/Ivy-Apps/ivy-wallet
+        """.trimIndent()
+
+        // Create Android share intent
+        val shareIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(android.content.Intent.EXTRA_SUBJECT, "Join ${account.name.value} on Ivy Wallet")
+            putExtra(android.content.Intent.EXTRA_TEXT, inviteText)
+            addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+
+        context.startActivity(
+            android.content.Intent.createChooser(shareIntent, "Share invitation via").apply {
+                addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+        )
     }
 
     fun setSharedAccountId(id: SharedAccountId) {

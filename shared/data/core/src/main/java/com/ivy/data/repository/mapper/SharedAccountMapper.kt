@@ -3,6 +3,7 @@ package com.ivy.data.repository.mapper
 import arrow.core.Either
 import arrow.core.raise.either
 import com.ivy.data.db.entity.SharedAccountEntity
+import com.ivy.data.model.AccountId
 import com.ivy.data.model.SharedAccount
 import com.ivy.data.model.SharedAccountId
 import com.ivy.data.model.primitive.AssetCode
@@ -20,7 +21,8 @@ class SharedAccountMapper @Inject constructor() {
             owners = parseOwners(owners),
             createdBy = createdBy,
             createdAt = createdAt,
-            updatedAt = updatedAt
+            updatedAt = updatedAt,
+            linkedAccountId = linkedAccountId?.let { AccountId(it) }
         )
     }
 
@@ -35,6 +37,7 @@ class SharedAccountMapper @Inject constructor() {
             createdBy = createdBy,
             createdAt = createdAt,
             updatedAt = updatedAt,
+            linkedAccountId = linkedAccountId?.value,
             remoteId = remoteId,
             isSynced = isSynced,
             id = id.value

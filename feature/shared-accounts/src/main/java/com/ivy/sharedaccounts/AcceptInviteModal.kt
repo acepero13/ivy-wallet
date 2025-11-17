@@ -23,8 +23,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -33,8 +31,6 @@ import com.ivy.data.model.AccountId
 import com.ivy.design.l0_system.UI
 import com.ivy.design.l0_system.style
 import com.ivy.legacy.IvyWalletPreview
-import com.ivy.legacy.utils.isNotNullOrBlank
-import com.ivy.ui.R
 import com.ivy.wallet.ui.theme.modal.IvyModal
 import com.ivy.wallet.ui.theme.modal.ModalAddSave
 import com.ivy.wallet.ui.theme.modal.ModalTitle
@@ -44,19 +40,15 @@ import kotlinx.collections.immutable.persistentListOf
 import java.util.UUID
 
 @Composable
-fun BoxWithConstraintsScope.CreateSharedAccountModal(
+fun BoxWithConstraintsScope.AcceptInviteModal(
     visible: Boolean,
-    baseCurrency: String,
     accounts: ImmutableList<Account>,
-    onCreateAccount: (name: String, currency: String, linkedAccountId: AccountId?) -> Unit,
+    onAcceptInvite: (invitationCode: String, linkedAccountId: AccountId?) -> Unit,
     onDismiss: () -> Unit,
     id: UUID = UUID.randomUUID()
 ) {
-    var accountName by remember(visible) {
+    var invitationCode by remember(visible) {
         mutableStateOf("")
-    }
-    var currency by remember(visible, baseCurrency) {
-        mutableStateOf(baseCurrency)
     }
     var selectedAccount by remember(visible) {
         mutableStateOf<Account?>(null)
@@ -69,12 +61,10 @@ fun BoxWithConstraintsScope.CreateSharedAccountModal(
         PrimaryAction = {
             ModalAddSave(
                 item = null,
-                enabled = accountName.isNotBlank(),
+                enabled = invitationCode.isNotBlank(),
             ) {
-                val finalCurrency = currency.trim().ifBlank { baseCurrency }
-                onCreateAccount(
-                    accountName.trim(),
-                    finalCurrency,
+                onAcceptInvite(
+                    invitationCode.trim(),
                     selectedAccount?.id
                 )
                 onDismiss()
@@ -84,7 +74,7 @@ fun BoxWithConstraintsScope.CreateSharedAccountModal(
         Spacer(Modifier.height(32.dp))
 
         ModalTitle(
-            text = stringResource(R.string.create_shared_account)
+            text = "Accept Invitation"
         )
 
         Spacer(Modifier.height(24.dp))
@@ -95,7 +85,7 @@ fun BoxWithConstraintsScope.CreateSharedAccountModal(
                 .padding(horizontal = 32.dp)
         ) {
             Text(
-                text = "Account Name",
+                text = "Invitation Code",
                 style = UI.typo.b2.style(
                     color = UI.colors.pureInverse,
                     fontWeight = FontWeight.SemiBold
@@ -105,59 +95,21 @@ fun BoxWithConstraintsScope.CreateSharedAccountModal(
             Spacer(Modifier.height(12.dp))
 
             BasicTextField(
-                value = accountName,
-                onValueChange = { accountName = it },
+                value = invitationCode,
+                onValueChange = { invitationCode = it },
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(UI.colors.medium, UI.shapes.r4)
                     .padding(horizontal = 16.dp, vertical = 12.dp),
-                textStyle = UI.typo.b1.style(
+                textStyle = UI.typo.b2.style(
                     color = UI.colors.pureInverse,
                     fontWeight = FontWeight.Medium
                 ),
                 cursorBrush = SolidColor(UI.colors.pureInverse),
                 decorationBox = { innerTextField ->
-                    if (accountName.isEmpty()) {
+                    if (invitationCode.isEmpty()) {
                         Text(
-                            text = stringResource(R.string.shared_account_name_hint),
-                            style = UI.typo.b2.style(
-                                color = UI.colors.mediumInverse,
-                                fontWeight = FontWeight.Medium
-                            )
-                        )
-                    }
-                    innerTextField()
-                }
-            )
-
-            Spacer(Modifier.height(24.dp))
-
-            Text(
-                text = "Currency",
-                style = UI.typo.b2.style(
-                    color = UI.colors.pureInverse,
-                    fontWeight = FontWeight.SemiBold
-                )
-            )
-
-            Spacer(Modifier.height(12.dp))
-
-            BasicTextField(
-                value = currency,
-                onValueChange = { currency = it },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(UI.colors.medium, UI.shapes.r4)
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                textStyle = UI.typo.b1.style(
-                    color = UI.colors.pureInverse,
-                    fontWeight = FontWeight.Medium
-                ),
-                cursorBrush = SolidColor(UI.colors.pureInverse),
-                decorationBox = { innerTextField ->
-                    if (currency.isEmpty()) {
-                        Text(
-                            text = baseCurrency,
+                            text = "Paste invitation code here",
                             style = UI.typo.b2.style(
                                 color = UI.colors.mediumInverse,
                                 fontWeight = FontWeight.Medium
@@ -247,7 +199,7 @@ fun BoxWithConstraintsScope.CreateSharedAccountModal(
             Spacer(Modifier.height(16.dp))
 
             Text(
-                text = stringResource(R.string.shared_account_info),
+                text = "Enter the invitation code you received to join a shared account.",
                 style = UI.typo.c.style(
                     color = UI.colors.mediumInverse,
                     fontWeight = FontWeight.Normal
@@ -263,11 +215,10 @@ fun BoxWithConstraintsScope.CreateSharedAccountModal(
 @Composable
 private fun Preview() {
     IvyWalletPreview {
-        CreateSharedAccountModal(
+        AcceptInviteModal(
             visible = true,
-            baseCurrency = "USD",
             accounts = persistentListOf(),
-            onCreateAccount = { _, _, _ -> },
+            onAcceptInvite = { _, _ -> },
             onDismiss = {}
         )
     }

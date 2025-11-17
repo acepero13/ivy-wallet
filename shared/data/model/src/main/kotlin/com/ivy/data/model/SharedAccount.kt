@@ -24,6 +24,7 @@ value class SharedAccountId(override val value: UUID) : UniqueId
  * @property createdBy User ID of the account creator
  * @property createdAt Timestamp when the shared account was created
  * @property updatedAt Timestamp of the last update
+ * @property linkedAccountId Optional local Account ID to link shared transactions to regular transaction flow
  */
 data class SharedAccount(
     override val id: SharedAccountId,
@@ -33,4 +34,5 @@ data class SharedAccount(
     val createdBy: String, // Firebase Auth UID
     val createdAt: Instant,
     val updatedAt: Instant,
+    val linkedAccountId: AccountId? = null, // Link to local account for transaction integration
 ) : Identifiable<SharedAccountId>

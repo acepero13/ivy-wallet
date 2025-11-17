@@ -113,6 +113,16 @@ private fun BoxWithConstraintsScope.UI(
                 Spacer(Modifier.width(16.dp))
 
                 CircleButtonFilled(
+                    icon = R.drawable.ic_import_web,
+                    onClick = {
+                        onEvent(SharedAccountsEvent.OnAcceptInvite)
+                    },
+                    clickAreaPadding = 12.dp
+                )
+
+                Spacer(Modifier.width(12.dp))
+
+                CircleButtonFilled(
                     icon = R.drawable.ic_plus,
                     onClick = {
                         onEvent(SharedAccountsEvent.OnCreateSharedAccount)
@@ -172,11 +182,24 @@ private fun BoxWithConstraintsScope.UI(
     CreateSharedAccountModal(
         visible = state.showCreateModal,
         baseCurrency = state.baseCurrency,
-        onCreateAccount = { name, currency ->
-            onEvent(SharedAccountsEvent.OnCreateAccount(name, currency))
+        accounts = state.accounts,
+        onCreateAccount = { name, currency, linkedAccountId ->
+            onEvent(SharedAccountsEvent.OnCreateAccount(name, currency, linkedAccountId))
         },
         onDismiss = {
             onEvent(SharedAccountsEvent.OnDismissCreateModal)
+        }
+    )
+
+    // Accept Invite Modal
+    AcceptInviteModal(
+        visible = state.showAcceptInviteModal,
+        accounts = state.accounts,
+        onAcceptInvite = { invitationCode, linkedAccountId ->
+            onEvent(SharedAccountsEvent.OnAcceptInviteCode(invitationCode, linkedAccountId))
+        },
+        onDismiss = {
+            onEvent(SharedAccountsEvent.OnDismissAcceptInviteModal)
         }
     )
 }

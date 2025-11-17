@@ -57,7 +57,8 @@ class SettingsViewModel @Inject constructor(
     private val updateSettingsAct: UpdateSettingsAct,
     private val settingsWriter: WriteSettingsDao,
     private val exportCsvUseCase: ExportCsvUseCase,
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    private val sharedAccountRepository: com.ivy.data.repository.SharedAccountRepository
 ) : ComposeViewModel<SettingsState, SettingsEvent>() {
 
     private val currencyCode = mutableStateOf("")
@@ -70,6 +71,8 @@ class SettingsViewModel @Inject constructor(
     private val treatTransfersAsIncomeExpense = mutableStateOf(false)
     private val startDateOfMonth = mutableIntStateOf(1)
     private val progressState = mutableStateOf(false)
+    private val useSharedAccountByDefault = mutableStateOf(false)
+    private val hasSharedAccounts = mutableStateOf(false)
 
     @Composable
     override fun uiState(): SettingsState {
@@ -88,7 +91,9 @@ class SettingsViewModel @Inject constructor(
             startDateOfMonth = getStartDateOfMonth(),
             progressState = getProgressState(),
             hideIncome = getHideIncome(),
-            languageOptionVisible = isLanguageOptionVisible()
+            languageOptionVisible = isLanguageOptionVisible(),
+            useSharedAccountByDefault = getUseSharedAccountByDefault(),
+            hasSharedAccounts = getHasSharedAccounts()
         )
     }
 
@@ -102,6 +107,18 @@ class SettingsViewModel @Inject constructor(
         initializeHideIncome()
         initializeTransfersAsIncomeExpense()
         initializeStartDateOfMonth()
+        initializeSharedAccountSettings()
+    }
+
+    private suspend fun initializeSharedAccountSettings() {
+        useSharedAccountByDefault.value = sharedPrefs.getBoolean(
+            SharedPrefs.USE_SHARED_ACCOUNT_BY_DEFAULT,
+            false
+        )
+
+        hasSharedAccounts.value = ioThread {
+            sharedAccountRepository.findAll().isNotEmpty()
+        }
     }
 
     private suspend fun initializeCurrency() {
@@ -203,6 +220,14 @@ class SettingsViewModel @Inject constructor(
         return progressState.value
     }
 
+    private fun getUseSharedAccountByDefault(): Boolean {
+        return useSharedAccountByDefault.value
+    }
+
+    private fun getHasSharedAccounts(): Boolean {
+        return hasSharedAccounts.value
+    }
+
     private fun isLanguageOptionVisible(): Boolean {
         return Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
     }
@@ -232,6 +257,7 @@ class SettingsViewModel @Inject constructor(
 
             SettingsEvent.DeleteCloudUserData -> deleteCloudUserData()
             SettingsEvent.DeleteAllUserData -> deleteAllUserData()
+            is SettingsEvent.SetUseSharedAccountByDefault -> setUseSharedAccountByDefault(event.useSharedAccountByDefault)
             SettingsEvent.SwitchLanguage -> switchLanguage()
         }
     }
@@ -371,6 +397,11 @@ class SettingsViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    private fun setUseSharedAccountByDefault(useShared: Boolean) {
+        useSharedAccountByDefault.value = useShared
+        sharedPrefs.putBoolean(SharedPrefs.USE_SHARED_ACCOUNT_BY_DEFAULT, useShared)
     }
 
     private fun deleteCloudUserData() {

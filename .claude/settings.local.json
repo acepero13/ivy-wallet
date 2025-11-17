@@ -9,7 +9,12 @@
       "Bash(adb shell:*)",
       "Bash(adb exec-out run-as com.ivy.wallet.debug cat:*)",
       "Bash(/tmp/ivywallet.db)",
-      "Bash(sqlite3:*)"
+      "Bash(sqlite3:*)",
+      "Bash(kotlinc:*)",
+      "Bash(cat:*)",
+      "Bash(git stash push:*)",
+      "Bash(git stash:*)",
+      "Bash(adb uninstall:*)"
     ],
     "deny": [],
     "ask": []

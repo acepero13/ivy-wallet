@@ -140,6 +140,15 @@ private fun BoxWithConstraintsScope.UI(
                 }
 
                 CircleButtonFilled(
+                    icon = R.drawable.ic_custom_family_m,
+                    onClick = {
+                        onEvent(SharedAccountDetailEvent.OnShareInvite)
+                    }
+                )
+
+                Spacer(Modifier.width(12.dp))
+
+                CircleButtonFilled(
                     icon = R.drawable.ic_plus,
                     onClick = {
                         showAddTransactionModal = true

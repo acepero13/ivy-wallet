@@ -16,6 +16,8 @@ class SharedPrefs @Inject constructor(
 
         // -------------------------------------- UX ------------------------------------------------
         const val LAST_SELECTED_ACCOUNT_ID = "last_selected_account_id"
+        const val DEFAULT_SHARED_ACCOUNT_ID = "default_shared_account_id"
+        const val USE_SHARED_ACCOUNT_BY_DEFAULT = "use_shared_account_by_default"
         // -------------------------------------- UX ------------------------------------------------
 
         // ----------------------------- App Settings -----------------------------------------------

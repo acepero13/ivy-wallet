@@ -35,7 +35,11 @@ data class EditTransactionViewState(
     val backgroundProcessingStarted: Boolean,
     val customExchangeRateState: CustomExchangeRateState,
     val tags: ImmutableList<Tag>,
-    val transactionAssociatedTags: ImmutableList<TagId>
+    val transactionAssociatedTags: ImmutableList<TagId>,
+    // Shared account support
+    val isSharedTransaction: Boolean,
+    val sharedAccounts: ImmutableList<com.ivy.data.model.SharedAccount>,
+    val selectedSharedAccount: com.ivy.data.model.SharedAccount?
 )
 
 sealed interface EditTransactionViewEvent {
@@ -69,4 +73,8 @@ sealed interface EditTransactionViewEvent {
         data class OnTagSearch(val query: String) : TagEvent
         data class OnTagEdit(val oldTag: Tag, val newTag: Tag) : TagEvent
     }
+
+    // Shared transaction events
+    data class OnToggleSharedTransaction(val isShared: Boolean) : EditTransactionViewEvent
+    data class OnSharedAccountChanged(val sharedAccount: com.ivy.data.model.SharedAccount) : EditTransactionViewEvent
 }

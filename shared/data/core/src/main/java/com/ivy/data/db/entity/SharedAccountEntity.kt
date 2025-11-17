@@ -20,6 +20,7 @@ import java.util.UUID
  * @property createdBy Firebase Auth UID of the user who created this account
  * @property createdAt Timestamp when the account was created
  * @property updatedAt Timestamp of the last update
+ * @property linkedAccountId Optional local Account ID to link shared transactions to regular accounts
  * @property remoteId Optional Firebase Firestore document ID (null until synced)
  * @property isSynced Whether this entity has been synced to Firestore
  * @property id Local UUID primary key
@@ -48,6 +49,10 @@ data class SharedAccountEntity(
     @SerialName("updatedAt")
     @Serializable(with = KSerializerInstant::class)
     val updatedAt: Instant,
+
+    @SerialName("linkedAccountId")
+    @Serializable(with = KSerializerUUID::class)
+    val linkedAccountId: UUID? = null,
 
     @SerialName("remoteId")
     val remoteId: String? = null,

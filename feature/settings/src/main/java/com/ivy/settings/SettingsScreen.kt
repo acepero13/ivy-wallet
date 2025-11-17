@@ -99,6 +99,8 @@ fun BoxWithConstraintsScope.SettingsScreen() {
         nameLocalAccount = uiState.name,
         startDateOfMonth = uiState.startDateOfMonth.toInt(),
         languageOptionVisible = uiState.languageOptionVisible,
+        useSharedAccountByDefault = uiState.useSharedAccountByDefault,
+        hasSharedAccounts = uiState.hasSharedAccounts,
         onSetCurrency = {
             viewModel.onEvent(SettingsEvent.SetCurrency(it))
         },
@@ -129,6 +131,9 @@ fun BoxWithConstraintsScope.SettingsScreen() {
         onSetTreatTransfersAsIncExp = {
             viewModel.onEvent(SettingsEvent.SetTransfersAsIncomeExpense(it))
         },
+        onSetUseSharedAccountByDefault = {
+            viewModel.onEvent(SettingsEvent.SetUseSharedAccountByDefault(it))
+        },
         onDeleteAllUserData = {
             viewModel.onEvent(SettingsEvent.DeleteAllUserData)
         },
@@ -151,6 +156,8 @@ private fun BoxWithConstraintsScope.UI(
     lockApp: Boolean,
     nameLocalAccount: String?,
     languageOptionVisible: Boolean,
+    useSharedAccountByDefault: Boolean,
+    hasSharedAccounts: Boolean,
     onSetCurrency: (String) -> Unit,
     startDateOfMonth: Int = 1,
     showNotifications: Boolean = true,
@@ -167,6 +174,7 @@ private fun BoxWithConstraintsScope.UI(
     onSetHideCurrentBalance: (Boolean) -> Unit = {},
     onSetHideIncome: (Boolean) -> Unit = {},
     onSetStartDateOfMonth: (Int) -> Unit = {},
+    onSetUseSharedAccountByDefault: (Boolean) -> Unit = {},
     onDeleteAllUserData: () -> Unit = {},
     onDeleteCloudUserData: () -> Unit = {},
     onSwitchLanguage: () -> Unit = {}
@@ -385,6 +393,18 @@ private fun BoxWithConstraintsScope.UI(
             )
 
             Spacer(Modifier.height(12.dp))
+
+            if (hasSharedAccounts) {
+                AppSwitch(
+                    lockApp = useSharedAccountByDefault,
+                    onSetLockApp = onSetUseSharedAccountByDefault,
+                    text = stringResource(R.string.use_shared_account_by_default),
+                    description = stringResource(R.string.use_shared_account_by_default_description),
+                    icon = R.drawable.ic_custom_account_s
+                )
+
+                Spacer(Modifier.height(12.dp))
+            }
 
             StartDateOfMonth(
                 startDateOfMonth = startDateOfMonth
@@ -1192,7 +1212,9 @@ private fun Preview(theme: Theme = Theme.LIGHT) {
             lockApp = false,
             currencyCode = "BGN",
             onSetCurrency = {},
-            languageOptionVisible = true
+            languageOptionVisible = true,
+            useSharedAccountByDefault = false,
+            hasSharedAccounts = true
         )
     }
 }
