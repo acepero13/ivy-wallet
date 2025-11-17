@@ -166,6 +166,7 @@ dependencies {
     implementation(libs.bundles.activity)
     implementation(libs.bundles.google)
     implementation(libs.bundles.firebase)
+    implementation("com.google.android.gms:play-services-auth:20.7.0")
     implementation(libs.datastore)
     implementation(libs.androidx.security)
     implementation(libs.androidx.biometrics)

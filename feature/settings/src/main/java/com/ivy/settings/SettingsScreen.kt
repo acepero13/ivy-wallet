@@ -346,6 +346,15 @@ private fun BoxWithConstraintsScope.UI(
 
             Spacer(Modifier.height(12.dp))
 
+            SettingsDefaultButton(
+                icon = R.drawable.ic_custom_account_m,
+                text = "Sign In / Authentication",
+            ) {
+                nav.navigateTo(com.ivy.navigation.AuthScreen)
+            }
+
+            Spacer(Modifier.height(12.dp))
+
             AppSwitch(
                 lockApp = lockApp,
                 onSetLockApp = onSetLockApp,

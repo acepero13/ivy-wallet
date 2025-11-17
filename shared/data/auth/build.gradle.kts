@@ -15,6 +15,7 @@ dependencies {
     implementation(libs.bundles.hilt)
     implementation(libs.firebase.auth)
     implementation(libs.kotlin.coroutines.googleplay.temp)
+    implementation("com.google.android.gms:play-services-auth:20.7.0")
 
     testImplementation(libs.bundles.testing)
     testImplementation(libs.kotest.assertions)

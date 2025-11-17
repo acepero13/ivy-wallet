@@ -84,4 +84,12 @@ interface AuthRepository {
      * @return AuthResult indicating success or failure
      */
     suspend fun deleteAccount(): AuthResult
+
+    /**
+     * Sign in with Google using an ID token.
+     *
+     * @param idToken The Google ID token obtained from Google Sign-In
+     * @return AuthResult indicating success or failure
+     */
+    suspend fun signInWithGoogle(idToken: String): AuthResult
 }

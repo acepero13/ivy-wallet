@@ -26,5 +26,7 @@ sealed class AuthEvent {
     data object SignIn : AuthEvent()
     data object SignUp : AuthEvent()
     data object SendEmailLink : AuthEvent()
+    data object SignInWithGoogle : AuthEvent()
+    data class GoogleSignInResult(val idToken: String?) : AuthEvent()
     data object DismissError : AuthEvent()
 }

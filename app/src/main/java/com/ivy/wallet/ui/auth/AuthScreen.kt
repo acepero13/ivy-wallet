@@ -1,31 +1,45 @@
 package com.ivy.wallet.ui.auth
 
+import android.app.Activity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.android.gms.common.api.ApiException
+import com.ivy.ui.R
 
 /**
  * Authentication screen that provides sign-in and sign-up functionality.
@@ -40,6 +54,24 @@ fun AuthScreen(
 ) {
     viewModel.onAuthSuccess = onAuthSuccess
     val state = viewModel.uiState()
+    val context = LocalContext.current
+
+    // Google Sign-In launcher
+    val googleSignInLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+            try {
+                val account = task.getResult(ApiException::class.java)
+                viewModel.onEvent(AuthEvent.GoogleSignInResult(account?.idToken))
+            } catch (e: ApiException) {
+                viewModel.onEvent(AuthEvent.GoogleSignInResult(null))
+            }
+        } else {
+            viewModel.onEvent(AuthEvent.GoogleSignInResult(null))
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -57,6 +89,81 @@ fun AuthScreen(
         )
 
         Spacer(modifier = Modifier.height(32.dp))
+
+        // Google Sign-In Button
+        OutlinedButton(
+            onClick = {
+                try {
+                    // Get default web client ID from google-services.json
+                    // This is automatically generated when google-services.json is added
+                    val webClientId = try {
+                        // Try to get the resource ID dynamically
+                        val resourceId = context.resources.getIdentifier(
+                            "default_web_client_id",
+                            "string",
+                            context.packageName
+                        )
+                        if (resourceId != 0) {
+                            context.getString(resourceId)
+                        } else {
+                            null
+                        }
+                    } catch (e: Exception) {
+                        // Fallback if google-services.json is not configured
+                        null
+                    }
+
+                    if (webClientId != null && webClientId.isNotBlank()) {
+                        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                            .requestIdToken(webClientId)
+                            .requestEmail()
+                            .build()
+
+                        val googleSignInClient = GoogleSignIn.getClient(context, gso)
+                        googleSignInLauncher.launch(googleSignInClient.signInIntent)
+                    } else {
+                        // Show error that Firebase is not configured
+                        viewModel.onEvent(AuthEvent.GoogleSignInResult(null))
+                    }
+                } catch (e: Exception) {
+                    viewModel.onEvent(AuthEvent.GoogleSignInResult(null))
+                }
+            },
+            modifier = Modifier.fillMaxWidth(),
+            enabled = !state.isLoading
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_google),
+                    contentDescription = "Google logo",
+                    modifier = Modifier.size(20.dp),
+                    tint = androidx.compose.ui.graphics.Color.Unspecified
+                )
+                Spacer(modifier = Modifier.padding(8.dp))
+                Text("Sign in with Google")
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Divider with "OR"
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            HorizontalDivider(modifier = Modifier.weight(1f))
+            Text(
+                text = "  OR  ",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            HorizontalDivider(modifier = Modifier.weight(1f))
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
 
         // Email field
         OutlinedTextField(

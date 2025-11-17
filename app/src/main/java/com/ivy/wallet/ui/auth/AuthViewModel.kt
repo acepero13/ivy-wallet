@@ -70,6 +70,15 @@ class AuthViewModel @Inject constructor(
                 sendEmailLink()
             }
 
+            AuthEvent.SignInWithGoogle -> {
+                // This will be handled by the UI triggering Google Sign-In
+                // The UI will call GoogleSignInResult when it gets the token
+            }
+
+            is AuthEvent.GoogleSignInResult -> {
+                signInWithGoogle(event.idToken)
+            }
+
             AuthEvent.DismissError -> {
                 state = state.copy(errorMessage = null)
             }
@@ -132,6 +141,24 @@ class AuthViewModel @Inject constructor(
                     // Should not happen for send email link
                 }
             }
+        }
+    }
+
+    private fun signInWithGoogle(idToken: String?) {
+        if (idToken == null) {
+            state = state.copy(
+                isLoading = false,
+                errorMessage = "Google sign-in was canceled or failed"
+            )
+            return
+        }
+
+        viewModelScope.launch {
+            state = state.copy(isLoading = true, errorMessage = null)
+
+            val result = authRepository.signInWithGoogle(idToken)
+
+            handleAuthResult(result)
         }
     }
 

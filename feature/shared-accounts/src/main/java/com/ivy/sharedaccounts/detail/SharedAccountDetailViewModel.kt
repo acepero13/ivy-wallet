@@ -99,18 +99,32 @@ class SharedAccountDetailViewModel @Inject constructor(
                 // TODO: Navigate to edit account screen
             }
             is SharedAccountDetailEvent.OnShareInvite -> {
+                android.util.Log.d("SharedAccountDetail", "OnShareInvite event received")
+                android.widget.Toast.makeText(context, "Share button clicked!", android.widget.Toast.LENGTH_SHORT).show()
                 shareInvite()
             }
         }
     }
 
     private fun shareInvite() {
-        val account = sharedAccount ?: return
+        android.util.Log.d("SharedAccountDetail", "shareInvite() called")
+        val account = sharedAccount
+        if (account == null) {
+            android.util.Log.e("SharedAccountDetail", "Cannot share: account is null")
+            return
+        }
+        android.util.Log.d("SharedAccountDetail", "Account found: ${account.name.value}")
 
-        viewModelScope.launch {
+        android.util.Log.d("SharedAccountDetail", "About to launch coroutine")
+
+        kotlinx.coroutines.GlobalScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            android.util.Log.d("SharedAccountDetail", "Inside coroutine")
             try {
+                android.util.Log.d("SharedAccountDetail", "Getting current user")
                 // Get current user
-                val currentUser = authRepository.getCurrentUserOnce()
+                val currentUser = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    authRepository.getCurrentUserOnce()
+                }
                 val userUid = when (currentUser) {
                     is com.ivy.data.auth.AuthResult.Success -> currentUser.user.uid
                     else -> {
@@ -119,28 +133,36 @@ class SharedAccountDetailViewModel @Inject constructor(
                         "local-user"
                     }
                 }
+                android.util.Log.d("SharedAccountDetail", "User UID: $userUid")
 
                 // Create invitation with a placeholder email (can be updated when sharing)
+                android.util.Log.d("SharedAccountDetail", "Creating invitation...")
                 val invitationResult = createInvitationUseCase(
                     sharedAccountId = account.id,
                     inviterUid = userUid,
                     inviteeEmail = "invite@placeholder.com", // Placeholder, user can share with anyone
                     expirationDays = 7
                 )
+                android.util.Log.d("SharedAccountDetail", "Invitation result received")
 
                 invitationResult.fold(
                     ifLeft = { error ->
                         android.util.Log.e("SharedAccountDetail", "Failed to create invitation: $error")
                         // Fallback to simple share
-                        shareSimpleInvite(account)
+                        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                            shareSimpleInvite(account)
+                        }
                     },
                     ifRight = { invitation ->
+                        android.util.Log.d("SharedAccountDetail", "Invitation created successfully: ${invitation.token}")
                         // Generate deep link
                         val linkResult = generateInviteLinkUseCase(invitation)
                         linkResult.fold(
                             ifLeft = { error ->
                                 android.util.Log.e("SharedAccountDetail", "Failed to generate link: $error")
-                                shareSimpleInvite(account)
+                                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                                    shareSimpleInvite(account)
+                                }
                             },
                             ifRight = { deepLink ->
                                 // Create invitation text with proper token
@@ -159,30 +181,35 @@ class SharedAccountDetailViewModel @Inject constructor(
                                 """.trimIndent()
 
                                 // Create Android share intent
-                                val shareIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
-                                    type = "text/plain"
-                                    putExtra(android.content.Intent.EXTRA_SUBJECT, "Join ${account.name.value} on Ivy Wallet")
-                                    putExtra(android.content.Intent.EXTRA_TEXT, inviteText)
-                                    addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
-                                }
-
-                                context.startActivity(
-                                    android.content.Intent.createChooser(shareIntent, "Share invitation via").apply {
+                                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                                    val shareIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                                        type = "text/plain"
+                                        putExtra(android.content.Intent.EXTRA_SUBJECT, "Join ${account.name.value} on Ivy Wallet")
+                                        putExtra(android.content.Intent.EXTRA_TEXT, inviteText)
                                         addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
                                     }
-                                )
+
+                                    context.startActivity(
+                                        android.content.Intent.createChooser(shareIntent, "Share invitation via").apply {
+                                            addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                                        }
+                                    )
+                                }
                             }
                         )
                     }
                 )
             } catch (e: Exception) {
                 android.util.Log.e("SharedAccountDetail", "Error sharing invite", e)
-                shareSimpleInvite(account)
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                    shareSimpleInvite(account)
+                }
             }
         }
     }
 
     private fun shareSimpleInvite(account: SharedAccount) {
+        android.util.Log.d("SharedAccountDetail", "shareSimpleInvite() called")
         val accountId = account.id.value.toString()
 
         // Fallback simple invitation text
@@ -197,6 +224,7 @@ class SharedAccountDetailViewModel @Inject constructor(
             Download Ivy Wallet: https://github.com/Ivy-Apps/ivy-wallet
         """.trimIndent()
 
+        android.util.Log.d("SharedAccountDetail", "Starting share intent")
         // Create Android share intent
         val shareIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
             type = "text/plain"

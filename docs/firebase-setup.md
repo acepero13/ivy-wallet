@@ -84,6 +84,87 @@ If enabling email link sign-in:
      .setUrl("https://your-dynamic-link.page.link/auth")
      ```
 
+### Google OAuth Sign-In
+
+To enable Google Sign-In (recommended for production):
+
+1. **Enable Google Sign-In Provider**:
+   - In Firebase Console, go to **Authentication** > **Sign-in method**
+   - Click **Google**
+   - Toggle **Enable**
+   - Enter project support email
+   - Click **Save**
+
+2. **Configure OAuth Consent Screen** (Google Cloud Console):
+   - Go to [Google Cloud Console](https://console.cloud.google.com/)
+   - Select your Firebase project
+   - Navigate to **APIs & Services** > **OAuth consent screen**
+   - Configure the consent screen:
+     - **User Type**: External (for public apps) or Internal (for G Suite orgs)
+     - **App name**: Ivy Wallet
+     - **User support email**: Your email
+     - **Developer contact email**: Your email
+   - Add scopes (optional):
+     - `email`
+     - `profile`
+     - `openid`
+   - Click **Save and Continue**
+
+3. **Get OAuth 2.0 Client IDs**:
+   - In Firebase Console, go to **Project Settings** > **General**
+   - Under **Your apps**, find your Android app
+   - Click **Add fingerprint** and add your SHA-1 certificates:
+
+     **Debug SHA-1:**
+     ```bash
+     keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey -storepass android -keypass android
+     ```
+
+     **Release SHA-1** (for production):
+     ```bash
+     keytool -list -v -keystore /path/to/your/release.keystore -alias your-alias
+     ```
+
+4. **Download Updated google-services.json**:
+   - After adding SHA-1 fingerprints, download the updated `google-services.json`
+   - Replace the file in your `app/` directory
+
+5. **Add Google Sign-In Dependencies** (if not already present):
+   ```kotlin
+   // In shared/data/auth/build.gradle.kts
+   dependencies {
+       implementation("com.google.android.gms:play-services-auth:20.7.0")
+       implementation("com.google.firebase:firebase-auth-ktx")
+   }
+   ```
+
+6. **Update AuthRepository Implementation**:
+   The `FirebaseAuthSource.kt` should already support Google Sign-In. If implementing from scratch:
+   ```kotlin
+   suspend fun signInWithGoogle(idToken: String): AuthResult {
+       val credential = GoogleAuthProvider.getCredential(idToken, null)
+       return try {
+           val result = auth.signInWithCredential(credential).await()
+           // Return success with user
+       } catch (e: Exception) {
+           // Handle error
+       }
+   }
+   ```
+
+7. **Test Google Sign-In**:
+   - Run the app on a physical device or emulator with Google Play Services
+   - Navigate to Settings > Sign In (or Auth screen)
+   - Click "Sign in with Google" button
+   - Select a Google account
+   - Verify successful authentication in Firebase Console > Authentication > Users
+
+**Important Notes for Google Sign-In:**
+- Requires Google Play Services on the device
+- Must add SHA-1 fingerprints for each build variant (debug, release)
+- For production, publish your app on Google Play or add authorized domains
+- Test thoroughly with different Google accounts
+
 ## Step 5: Enable Cloud Firestore (for future PRs)
 
 1. In Firebase Console, go to **Build** > **Firestore Database**
@@ -124,14 +205,36 @@ service cloud.firestore {
    ./gradlew :shared:data:auth:assemble
    ```
 3. Run the app on a device or emulator
-4. Navigate to the Auth screen (will be integrated in future PRs)
-5. Try signing up with a test email/password
+4. **Access the Authentication Screen**:
+
+   **Option 1 - From Settings (Recommended):**
+   - Open Ivy Wallet
+   - Navigate to **Settings** (bottom navigation or drawer menu)
+   - Scroll down to find **"Sign In"** or **"Authentication"** button
+   - Tap to open the Auth screen
+
+   **Option 2 - Direct Navigation (for developers):**
+   - The auth screen is registered at route: `AuthScreen`
+   - You can navigate programmatically:
+     ```kotlin
+     navigation.navigateTo(AuthScreen)
+     ```
+
+   **Option 3 - Deep Link (future):**
+   - Will support deep links like: `ivywallet://auth`
+
+5. Try signing up with a test email/password:
+   - Enter your email
+   - Enter a password (min 6 characters recommended)
+   - Click "Sign Up"
+   - Or toggle to "Use email link (passwordless)" for passwordless auth
 
 ### Verify in Firebase Console
 
 1. Go to **Authentication** > **Users**
 2. You should see newly created test users appear here
-3. Check **Firestore Database** for any data (after sync implementation)
+3. Verify user details (email, UID, creation timestamp)
+4. Check **Firestore Database** for any data (after sync implementation is complete)
 
 ## Step 8: Set Up Multiple Environments (Optional)
 

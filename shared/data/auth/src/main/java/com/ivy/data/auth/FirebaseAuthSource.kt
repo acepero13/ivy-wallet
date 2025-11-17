@@ -3,6 +3,7 @@ package com.ivy.data.auth
 import com.google.firebase.auth.ActionCodeSettings
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.UserProfileChangeRequest
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -169,6 +170,20 @@ class FirebaseAuthSource @Inject constructor(
         } catch (e: Exception) {
             AuthResult.Error(
                 message = e.message ?: "Account deletion failed with unknown error",
+                exception = e
+            )
+        }
+    }
+
+    override suspend fun signInWithGoogle(idToken: String): AuthResult {
+        return try {
+            val credential = GoogleAuthProvider.getCredential(idToken, null)
+            val authResult = firebaseAuth.signInWithCredential(credential).await()
+            authResult.user?.toAuthUser()?.let { AuthResult.Success(it) }
+                ?: AuthResult.Error("Google sign in failed: User is null")
+        } catch (e: Exception) {
+            AuthResult.Error(
+                message = e.message ?: "Google sign in failed with unknown error",
                 exception = e
             )
         }
