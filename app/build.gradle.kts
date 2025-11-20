@@ -69,7 +69,7 @@ android {
 
             signingConfig = signingConfigs.getByName("debug")
 
-            applicationIdSuffix = ".debug"
+            applicationIdSuffix = ".debug2"
             resValue("string", "app_name", "Ivy Wallet Debug")
         }
 

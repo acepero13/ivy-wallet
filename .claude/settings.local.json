@@ -15,7 +15,9 @@
       "Bash(git stash push:*)",
       "Bash(git stash:*)",
       "Bash(adb uninstall:*)",
-      "Bash(read:*)"
+      "Bash(read:*)",
+      "Bash(keytool:*)",
+      "Bash(adb devices:*)"
     ],
     "deny": [],
     "ask": []

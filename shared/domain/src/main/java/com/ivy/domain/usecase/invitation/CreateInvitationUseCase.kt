@@ -7,6 +7,7 @@ import com.ivy.data.model.InvitationId
 import com.ivy.data.model.InvitationStatus
 import com.ivy.data.model.SharedAccountId
 import com.ivy.data.repository.InvitationRepository
+import com.ivy.data.sync.FirestoreInvitationRepository
 import java.security.SecureRandom
 import java.time.Instant
 import java.time.temporal.ChronoUnit
@@ -19,6 +20,7 @@ import javax.inject.Inject
  */
 class CreateInvitationUseCase @Inject constructor(
     private val invitationRepository: InvitationRepository,
+    private val firestoreInvitationRepository: FirestoreInvitationRepository,
 ) {
     /**
      * Creates a new invitation with a secure token
@@ -51,8 +53,11 @@ class CreateInvitationUseCase @Inject constructor(
             acceptedBy = null
         )
 
-        // Save to repository
+        // Save to local repository
         invitationRepository.save(invitation).bind()
+
+        // Also save to Firestore for cross-device access
+        firestoreInvitationRepository.save(invitation).bind()
 
         invitation
     }

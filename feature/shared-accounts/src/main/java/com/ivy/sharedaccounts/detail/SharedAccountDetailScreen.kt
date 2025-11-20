@@ -68,7 +68,6 @@ fun BoxWithConstraintsScope.SharedAccountDetailScreen(screen: SharedAccountDetai
     LaunchedEffect(screen.sharedAccountId) {
         android.util.Log.d("SharedAccountDetailScreen", "LaunchedEffect triggered, loading data")
         val accountId = SharedAccountId(screen.sharedAccountId)
-        viewModel.setSharedAccountId(accountId)
         viewModel.loadDataForAccount(accountId)
     }
 

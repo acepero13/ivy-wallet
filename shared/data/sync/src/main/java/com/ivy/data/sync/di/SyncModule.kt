@@ -1,6 +1,5 @@
 package com.ivy.data.sync.di
 
-import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreSettings
 import com.ivy.data.sync.RemoteService
@@ -60,12 +59,6 @@ object SyncModule {
         firestore.firestoreSettings = settings
 
         return firestore
-    }
-
-    @Provides
-    @Singleton
-    fun provideFirebaseAuth(): FirebaseAuth {
-        return FirebaseAuth.getInstance()
     }
 }
 

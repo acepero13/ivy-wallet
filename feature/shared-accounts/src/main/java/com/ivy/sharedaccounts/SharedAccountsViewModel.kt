@@ -21,6 +21,7 @@ import com.ivy.data.model.primitive.NotBlankTrimmedString
 import com.ivy.data.repository.AccountRepository
 import com.ivy.data.repository.SharedAccountRepository
 import com.ivy.data.repository.SharedTransactionRepository
+import com.ivy.data.sync.FirestoreInvitationRepository
 import com.ivy.domain.usecase.invitation.AcceptInvitationUseCase
 import com.ivy.navigation.Navigation
 import com.ivy.navigation.SharedAccountDetailScreen
@@ -49,6 +50,7 @@ class SharedAccountsViewModel @Inject constructor(
     private val navigation: Navigation,
     private val authRepository: AuthRepository,
     private val acceptInvitationUseCase: AcceptInvitationUseCase,
+    private val firestoreInvitationRepository: FirestoreInvitationRepository,
 ) : ComposeViewModel<SharedAccountsState, SharedAccountsEvent>() {
 
     private var sharedAccounts by mutableStateOf<List<SharedAccount>>(emptyList())
@@ -66,6 +68,7 @@ class SharedAccountsViewModel @Inject constructor(
                     is DataWriteEvent.SharedAccountChange -> {
                         loadSharedAccounts()
                     }
+
                     else -> {
                         // do nothing
                     }
@@ -101,9 +104,13 @@ class SharedAccountsViewModel @Inject constructor(
                 event.currency,
                 event.linkedAccountId
             )
+
             SharedAccountsEvent.OnAcceptInvite -> onAcceptInvite()
             SharedAccountsEvent.OnDismissAcceptInviteModal -> onDismissAcceptInviteModal()
-            is SharedAccountsEvent.OnAcceptInviteCode -> onAcceptInviteCode(event.invitationCode, event.linkedAccountId)
+            is SharedAccountsEvent.OnAcceptInviteCode -> onAcceptInviteCode(
+                event.invitationCode,
+                event.linkedAccountId
+            )
         }
     }
 
@@ -186,7 +193,8 @@ class SharedAccountsViewModel @Inject constructor(
                         // If a linked account was selected, update the shared account
                         if (linkedAccountId != null) {
                             try {
-                                val sharedAccount = sharedAccountRepository.findById(invitation.sharedAccountId)
+                                val sharedAccount =
+                                    sharedAccountRepository.findById(invitation.sharedAccountId)
                                 if (sharedAccount != null) {
                                     val updated = sharedAccount.copy(
                                         linkedAccountId = linkedAccountId,
@@ -244,7 +252,21 @@ class SharedAccountsViewModel @Inject constructor(
                 linkedAccountId = linkedAccountId
             )
 
+            // Save to local repository
             sharedAccountRepository.save(newAccount)
+
+            // Also save to Firestore for cross-device access
+            firestoreInvitationRepository.saveSharedAccount(
+                id = newAccount.id,
+                name = newAccount.name.value,
+                currency = newAccount.currency.code,
+                owners = newAccount.owners,
+                createdBy = newAccount.createdBy,
+                createdAt = newAccount.createdAt.toEpochMilli(),
+                updatedAt = newAccount.updatedAt.toEpochMilli(),
+                linkedAccountId = newAccount.linkedAccountId?.value?.toString()
+            )
+
             showCreateModal = false
             loadSharedAccounts()
         }

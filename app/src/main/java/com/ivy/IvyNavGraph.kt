@@ -5,6 +5,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.BoxWithConstraintsScope
 import androidx.compose.runtime.Composable
 import com.ivy.attributions.AttributionsScreenImpl
+import com.ivy.navigation.navigation
 import com.ivy.balance.BalanceScreen
 import com.ivy.budgets.BudgetScreen
 import com.ivy.categories.CategoriesScreen
@@ -92,12 +93,15 @@ fun BoxWithConstraintsScope.IvyNavGraph(screen: Screen?) {
         ReleasesScreen -> ReleasesScreenImpl()
         DisclaimerScreen -> DisclaimerScreenImpl()
         PollScreen -> PollScreen()
-        is com.ivy.navigation.AuthScreen -> AuthScreen(
-            onAuthSuccess = {
-                // Navigate to main screen after successful auth
-                // TODO: This will be enhanced in future PRs
-            }
-        )
+        is com.ivy.navigation.AuthScreen -> {
+            val nav = navigation()
+            AuthScreen(
+                onAuthSuccess = {
+                    // Navigate back to settings screen after successful auth
+                    nav.back()
+                }
+            )
+        }
         is com.ivy.navigation.SharedAccountsScreen -> SharedAccountsScreen(screen = screen)
         is com.ivy.navigation.SharedAccountDetailScreen -> SharedAccountDetailScreen(screen = screen)
     }

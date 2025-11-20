@@ -243,16 +243,24 @@ class SharedAccountDetailViewModel @Inject constructor(
     fun setSharedAccountId(id: SharedAccountId) {
         android.util.Log.d("SharedAccountDetail", "setSharedAccountId called with: ${id.value}")
         sharedAccountId = id
-        android.util.Log.d("SharedAccountDetail", "About to load data directly")
-
-        // Load data directly in a launched effect from the composable instead
+        android.util.Log.d("SharedAccountDetail", "Launching loadData coroutine from setSharedAccountId")
         isLoading = true
+
+        // Launch the data loading coroutine
+        viewModelScope.launch(Dispatchers.IO) {
+            loadData()
+        }
     }
 
     suspend fun loadDataForAccount(id: SharedAccountId) {
         android.util.Log.d("SharedAccountDetail", "loadDataForAccount called with: ${id.value}")
         sharedAccountId = id
-        loadData()
+        isLoading = true
+        android.util.Log.d("SharedAccountDetail", "Calling loadData with IO dispatcher")
+
+        withContext(Dispatchers.IO) {
+            loadData()
+        }
     }
 
     private suspend fun loadData() {
@@ -266,7 +274,6 @@ class SharedAccountDetailViewModel @Inject constructor(
         }
 
         android.util.Log.d("SharedAccountDetail", "Loading account: ${accountId.value}")
-        isLoading = true
 
         try {
             android.util.Log.d("SharedAccountDetail", "Calling repository.findById")

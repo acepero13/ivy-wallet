@@ -60,15 +60,30 @@ fun AuthScreen(
     val googleSignInLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
-        if (result.resultCode == Activity.RESULT_OK) {
-            val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
-            try {
-                val account = task.getResult(ApiException::class.java)
-                viewModel.onEvent(AuthEvent.GoogleSignInResult(account?.idToken))
-            } catch (e: ApiException) {
-                viewModel.onEvent(AuthEvent.GoogleSignInResult(null))
+        android.util.Log.d("AuthScreen", "Google Sign-In result: resultCode=${result.resultCode}, RESULT_OK=${Activity.RESULT_OK}")
+
+        // Always try to get the account from the intent, even if cancelled
+        // This will give us more detailed error information
+        val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+        try {
+            val account = task.getResult(ApiException::class.java)
+            android.util.Log.d("AuthScreen", "Google account: ${account?.email}, idToken=${account?.idToken?.take(20)}...")
+            viewModel.onEvent(AuthEvent.GoogleSignInResult(account?.idToken))
+        } catch (e: ApiException) {
+            android.util.Log.e("AuthScreen", "Google Sign-In ApiException: statusCode=${e.statusCode}, message=${e.message}", e)
+            android.util.Log.e("AuthScreen", "Common error codes: 10=DEVELOPER_ERROR (SHA-1/package mismatch), 12501=SIGN_IN_CANCELLED, 7=NETWORK_ERROR")
+
+            when (e.statusCode) {
+                10 -> {
+                    android.util.Log.e("AuthScreen", "DEVELOPER_ERROR: This usually means:")
+                    android.util.Log.e("AuthScreen", "1. SHA-1 fingerprint not registered in Firebase/Google Cloud")
+                    android.util.Log.e("AuthScreen", "2. Wrong package name")
+                    android.util.Log.e("AuthScreen", "3. OAuth client not properly configured")
+                }
+                12501 -> android.util.Log.e("AuthScreen", "User cancelled sign-in")
+                7 -> android.util.Log.e("AuthScreen", "Network error")
             }
-        } else {
+
             viewModel.onEvent(AuthEvent.GoogleSignInResult(null))
         }
     }
@@ -93,11 +108,11 @@ fun AuthScreen(
         // Google Sign-In Button
         OutlinedButton(
             onClick = {
+                android.util.Log.d("AuthScreen", "Google Sign-In button clicked")
                 try {
                     // Get default web client ID from google-services.json
-                    // This is automatically generated when google-services.json is added
+                    // This should now be auto-generated properly with the new Firebase app
                     val webClientId = try {
-                        // Try to get the resource ID dynamically
                         val resourceId = context.resources.getIdentifier(
                             "default_web_client_id",
                             "string",
@@ -106,26 +121,25 @@ fun AuthScreen(
                         if (resourceId != 0) {
                             context.getString(resourceId)
                         } else {
-                            null
+                            // Fallback to web client ID from google-services.json
+                            "273203605390-23696i8v2hpe8196iji2k2ejir57iup6.apps.googleusercontent.com"
                         }
                     } catch (e: Exception) {
-                        // Fallback if google-services.json is not configured
-                        null
+                        "273203605390-23696i8v2hpe8196iji2k2ejir57iup6.apps.googleusercontent.com"
                     }
 
-                    if (webClientId != null && webClientId.isNotBlank()) {
-                        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-                            .requestIdToken(webClientId)
-                            .requestEmail()
-                            .build()
+                    android.util.Log.d("AuthScreen", "Web client ID: ${webClientId.take(20)}...")
+                    android.util.Log.d("AuthScreen", "Creating GoogleSignInOptions and launching sign-in")
 
-                        val googleSignInClient = GoogleSignIn.getClient(context, gso)
-                        googleSignInLauncher.launch(googleSignInClient.signInIntent)
-                    } else {
-                        // Show error that Firebase is not configured
-                        viewModel.onEvent(AuthEvent.GoogleSignInResult(null))
-                    }
+                    val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                        .requestIdToken(webClientId)
+                        .requestEmail()
+                        .build()
+
+                    val googleSignInClient = GoogleSignIn.getClient(context, gso)
+                    googleSignInLauncher.launch(googleSignInClient.signInIntent)
                 } catch (e: Exception) {
+                    android.util.Log.e("AuthScreen", "Exception during Google Sign-In", e)
                     viewModel.onEvent(AuthEvent.GoogleSignInResult(null))
                 }
             },

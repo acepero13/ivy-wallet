@@ -7,18 +7,18 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:273203605390:android:d267d2bbab1e3c6931fedf",
+        "mobilesdk_app_id": "1:273203605390:android:4a241195db4a6fdd31fedf",
         "android_client_info": {
-          "package_name": "com.ivy.wallet.debug"
+          "package_name": "com.ivy.wallet.debug2"
         }
       },
       "oauth_client": [
         {
-          "client_id": "273203605390-vfoi673rg2o84als8npd9l9da2cncvfr.apps.googleusercontent.com",
+          "client_id": "273203605390-1tv9htk00ebj84elronidicklf2s2nb7.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
-            "package_name": "com.ivy.wallet.debug",
-            "certificate_hash": "f92674899168e644ea277a37a4c79967d2de2d85"
+            "package_name": "com.ivy.wallet.debug2",
+            "certificate_hash": "962730459b106b8aa8fb225430deb6a97c559699"
           }
         },
         {
