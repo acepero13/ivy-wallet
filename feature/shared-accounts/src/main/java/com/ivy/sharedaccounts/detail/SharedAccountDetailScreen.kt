@@ -88,9 +88,10 @@ private fun BoxWithConstraintsScope.ScreenContent(viewModel: SharedAccountDetail
     }
 
     // Perform link account action when triggered
-    if (uiState.pendingLinkAction && uiState.pendingLinkAccountId != null) {
+    android.util.Log.d("SharedAccountDetailScreen", "pendingLinkAction: ${uiState.pendingLinkAction}, pendingLinkAccountId: ${uiState.pendingLinkAccountId?.value}")
+    if (uiState.pendingLinkAction) {
         LaunchedEffect(uiState.pendingLinkAccountId) {
-            android.util.Log.d("SharedAccountDetailScreen", "LaunchedEffect: Performing link account action")
+            android.util.Log.d("SharedAccountDetailScreen", "LaunchedEffect: Performing link account action with accountId: ${uiState.pendingLinkAccountId?.value}")
             viewModel.performLinkAccount(uiState.pendingLinkAccountId)
         }
     }

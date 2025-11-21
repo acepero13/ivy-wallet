@@ -165,16 +165,17 @@ class SharedAccountDetailViewModel @Inject constructor(
     }
 
     suspend fun performLinkAccount(accountId: AccountId?) {
-        android.util.Log.d("SharedAccountDetail", "performLinkAccount - starting link process")
+        android.util.Log.d("SharedAccountDetail", "performLinkAccount - starting link process with accountId: ${accountId?.value}")
         withContext(Dispatchers.IO) {
             try {
                 val account = sharedAccount
-                android.util.Log.d("SharedAccountDetail", "Current shared account: ${account?.name?.value}")
+                android.util.Log.d("SharedAccountDetail", "Current shared account: ${account?.name?.value}, current linkedAccountId: ${account?.linkedAccountId?.value}")
                 if (account != null) {
                     val updatedAccount = account.copy(
                         linkedAccountId = accountId,
                         updatedAt = Instant.now()
                     )
+                    android.util.Log.d("SharedAccountDetail", "Updated account linkedAccountId to: ${updatedAccount.linkedAccountId?.value}")
                     android.util.Log.d("SharedAccountDetail", "Saving updated account to Room...")
                     sharedAccountRepository.save(updatedAccount)
 
@@ -205,6 +206,9 @@ class SharedAccountDetailViewModel @Inject constructor(
                     }
 
                     android.util.Log.d("SharedAccountDetail", "Linked account updated successfully")
+
+                    // Update local state immediately before closing modal
+                    sharedAccount = updatedAccount
 
                     withContext(Dispatchers.Main) {
                         showLinkAccountModal = false
