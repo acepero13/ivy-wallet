@@ -77,6 +77,7 @@ fun BoxWithConstraintsScope.SharedAccountDetailScreen(screen: SharedAccountDetai
 @Composable
 private fun BoxWithConstraintsScope.ScreenContent(viewModel: SharedAccountDetailViewModel) {
     val uiState = viewModel.uiState()
+    val nav = navigation()
 
     // Load accounts when modal is shown
     if (uiState.showLinkAccountModal) {
@@ -91,6 +92,14 @@ private fun BoxWithConstraintsScope.ScreenContent(viewModel: SharedAccountDetail
         LaunchedEffect(uiState.pendingLinkAccountId) {
             android.util.Log.d("SharedAccountDetailScreen", "LaunchedEffect: Performing link account action")
             viewModel.performLinkAccount(uiState.pendingLinkAccountId)
+        }
+    }
+
+    // Navigate back when account is deleted
+    if (uiState.accountDeleted) {
+        LaunchedEffect(Unit) {
+            android.util.Log.d("SharedAccountDetailScreen", "Account deleted, navigating back")
+            nav.back()
         }
     }
 
@@ -254,6 +263,8 @@ private fun BoxWithConstraintsScope.UI(
 
     // Link Account Modal
     if (state.showLinkAccountModal) {
+        var showDeleteConfirmation by remember { mutableStateOf(false) }
+
         LinkAccountModal(
             visible = state.showLinkAccountModal,
             accounts = state.availableAccounts,
@@ -263,8 +274,49 @@ private fun BoxWithConstraintsScope.UI(
             },
             onSelectAccount = { accountId ->
                 onEvent(SharedAccountDetailEvent.OnLinkAccount(accountId))
+            },
+            onDeleteAccount = {
+                showDeleteConfirmation = true
             }
         )
+
+        // Delete Confirmation Dialog
+        if (showDeleteConfirmation) {
+            androidx.compose.material3.AlertDialog(
+                onDismissRequest = { showDeleteConfirmation = false },
+                title = {
+                    Text(
+                        text = "Delete Shared Account?",
+                        style = UI.typo.b1.style(
+                            fontWeight = FontWeight.ExtraBold
+                        )
+                    )
+                },
+                text = {
+                    Text(
+                        text = "Are you sure you want to delete this shared account? This will permanently delete it for all members and cannot be undone.",
+                        style = UI.typo.b2.style()
+                    )
+                },
+                confirmButton = {
+                    androidx.compose.material3.TextButton(
+                        onClick = {
+                            showDeleteConfirmation = false
+                            onEvent(SharedAccountDetailEvent.OnDeleteAccount)
+                        }
+                    ) {
+                        Text("Delete", color = Red)
+                    }
+                },
+                dismissButton = {
+                    androidx.compose.material3.TextButton(
+                        onClick = { showDeleteConfirmation = false }
+                    ) {
+                        Text("Cancel", color = UI.colors.pureInverse)
+                    }
+                }
+            )
+        }
     }
 }
 

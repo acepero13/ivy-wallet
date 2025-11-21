@@ -33,6 +33,7 @@ import com.ivy.design.l0_system.style
 import com.ivy.ui.R
 import com.ivy.wallet.ui.theme.Gray
 import com.ivy.wallet.ui.theme.GreenLight
+import com.ivy.wallet.ui.theme.Red
 import com.ivy.wallet.ui.theme.White
 import com.ivy.wallet.ui.theme.components.CircleButtonFilled
 import com.ivy.wallet.ui.theme.components.IvyIcon
@@ -45,7 +46,8 @@ fun LinkAccountModal(
     accounts: ImmutableList<Account>,
     currentLinkedAccountId: AccountId?,
     onDismiss: () -> Unit,
-    onSelectAccount: (AccountId?) -> Unit
+    onSelectAccount: (AccountId?) -> Unit,
+    onDeleteAccount: () -> Unit = {}
 ) {
     if (!visible) return
 
@@ -91,7 +93,7 @@ fun LinkAccountModal(
                 Spacer(Modifier.height(24.dp))
 
                 Text(
-                    text = "Link this shared account to a regular account so transactions appear in your main dashboard balance.",
+                    text = "Link this shared account to a regular account. This will:\n• Show shared transactions in your main balance\n• Use this shared account by default for new transactions",
                     style = UI.typo.b2.style(
                         color = Gray,
                         fontWeight = FontWeight.Medium
@@ -151,6 +153,29 @@ fun LinkAccountModal(
                         }
                     }
                 }
+
+                Spacer(Modifier.height(32.dp))
+
+                // Delete Account Button
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(UI.shapes.r4)
+                        .background(Red, UI.shapes.r4)
+                        .clickable(onClick = onDeleteAccount)
+                        .padding(all = 16.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "Delete Shared Account",
+                        style = UI.typo.b2.style(
+                            color = White,
+                            fontWeight = FontWeight.ExtraBold
+                        )
+                    )
+                }
+
+                Spacer(Modifier.height(24.dp))
             }
         }
     }

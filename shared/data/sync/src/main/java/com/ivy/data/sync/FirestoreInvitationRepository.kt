@@ -381,4 +381,35 @@ class FirestoreInvitationRepository @Inject constructor(
             null
         }
     }
+
+    /**
+     * Delete a shared account and all its transactions from Firestore
+     */
+    suspend fun deleteSharedAccount(sharedAccountId: SharedAccountId): Either<String, Unit> = either {
+        try {
+            // Delete all transactions in the subcollection
+            val transactionsSnapshot = firestore.collection(COLLECTION_SHARED_ACCOUNTS)
+                .document(sharedAccountId.value.toString())
+                .collection("transactions")
+                .get()
+                .await()
+
+            // Delete each transaction document
+            transactionsSnapshot.documents.forEach { doc ->
+                doc.reference.delete().await()
+            }
+            Timber.d("Deleted ${transactionsSnapshot.size()} transactions for account ${sharedAccountId.value}")
+
+            // Delete the shared account document itself
+            firestore.collection(COLLECTION_SHARED_ACCOUNTS)
+                .document(sharedAccountId.value.toString())
+                .delete()
+                .await()
+
+            Timber.d("Deleted shared account ${sharedAccountId.value} from Firestore")
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to delete shared account from Firestore")
+            raise("Failed to delete shared account: ${e.message}")
+        }
+    }
 }

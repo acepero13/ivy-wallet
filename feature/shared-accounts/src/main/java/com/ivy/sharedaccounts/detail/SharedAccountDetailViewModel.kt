@@ -54,6 +54,7 @@ class SharedAccountDetailViewModel @Inject constructor(
     private val createInvitationUseCase: CreateInvitationUseCase,
     private val generateInviteLinkUseCase: GenerateInviteLinkUseCase,
     private val firestoreInvitationRepository: FirestoreInvitationRepository,
+    private val sharedPrefs: com.ivy.base.legacy.SharedPrefs,
 ) : ComposeViewModel<SharedAccountDetailState, SharedAccountDetailEvent>() {
 
     private var sharedAccountId by mutableStateOf<SharedAccountId?>(null)
@@ -67,6 +68,7 @@ class SharedAccountDetailViewModel @Inject constructor(
     private var availableAccounts by mutableStateOf<ImmutableList<Account>>(emptyList<Account>().toImmutableList())
     private var pendingLinkAction by mutableStateOf(false)
     private var pendingLinkAccountId by mutableStateOf<AccountId?>(null)
+    private var accountDeleted by mutableStateOf(false)
 
     init {
         android.util.Log.d("SharedAccountDetail", "ViewModel initialized: ${this.hashCode()}")
@@ -99,7 +101,8 @@ class SharedAccountDetailViewModel @Inject constructor(
             showLinkAccountModal = showLinkAccountModal,
             availableAccounts = availableAccounts,
             pendingLinkAction = pendingLinkAction,
-            pendingLinkAccountId = pendingLinkAccountId
+            pendingLinkAccountId = pendingLinkAccountId,
+            accountDeleted = accountDeleted
         )
     }
 
@@ -127,6 +130,9 @@ class SharedAccountDetailViewModel @Inject constructor(
             }
             is SharedAccountDetailEvent.OnLinkAccount -> {
                 onLinkAccount(event.accountId)
+            }
+            is SharedAccountDetailEvent.OnDeleteAccount -> {
+                deleteSharedAccount()
             }
         }
     }
@@ -184,6 +190,19 @@ class SharedAccountDetailViewModel @Inject constructor(
                         updatedAt = updatedAccount.updatedAt.toEpochMilli(),
                         linkedAccountId = accountId?.value?.toString()
                     )
+
+                    // Update preferences for "use by default" behavior
+                    if (accountId != null) {
+                        // When linking: enable "use shared account by default"
+                        android.util.Log.d("SharedAccountDetail", "Enabling 'use shared account by default'")
+                        sharedPrefs.putBoolean(com.ivy.base.legacy.SharedPrefs.USE_SHARED_ACCOUNT_BY_DEFAULT, true)
+                        sharedPrefs.putString(com.ivy.base.legacy.SharedPrefs.DEFAULT_SHARED_ACCOUNT_ID, account.id.value.toString())
+                    } else {
+                        // When unlinking: disable "use shared account by default"
+                        android.util.Log.d("SharedAccountDetail", "Disabling 'use shared account by default'")
+                        sharedPrefs.putBoolean(com.ivy.base.legacy.SharedPrefs.USE_SHARED_ACCOUNT_BY_DEFAULT, false)
+                        sharedPrefs.remove(com.ivy.base.legacy.SharedPrefs.DEFAULT_SHARED_ACCOUNT_ID)
+                    }
 
                     android.util.Log.d("SharedAccountDetail", "Linked account updated successfully")
 
@@ -467,6 +486,86 @@ class SharedAccountDetailViewModel @Inject constructor(
             sharedAccount = null
             transactions = emptyList<SharedTransaction>().toImmutableList()
             isLoading = false
+        }
+    }
+
+    private fun deleteSharedAccount() {
+        android.util.Log.d("SharedAccountDetail", "deleteSharedAccount() called")
+        val account = sharedAccount
+        if (account == null) {
+            android.util.Log.e("SharedAccountDetail", "Cannot delete: account is null")
+            return
+        }
+
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                android.util.Log.d("SharedAccountDetail", "Starting deletion of account ${account.id.value}")
+
+                // 1. Delete from Firestore
+                android.util.Log.d("SharedAccountDetail", "Deleting from Firestore...")
+                val firestoreResult = firestoreInvitationRepository.deleteSharedAccount(account.id)
+                firestoreResult.fold(
+                    ifLeft = { error ->
+                        android.util.Log.e("SharedAccountDetail", "Failed to delete from Firestore: $error")
+                        withContext(Dispatchers.Main) {
+                            android.widget.Toast.makeText(
+                                context,
+                                "Failed to delete from cloud: $error",
+                                android.widget.Toast.LENGTH_LONG
+                            ).show()
+                        }
+                    },
+                    ifRight = {
+                        android.util.Log.d("SharedAccountDetail", "Successfully deleted from Firestore")
+                    }
+                )
+
+                // 2. Delete all transactions from local database
+                android.util.Log.d("SharedAccountDetail", "Deleting transactions from local database...")
+                val localTransactions = sharedTransactionRepository.findBySharedAccountId(account.id)
+                localTransactions.forEach { transaction ->
+                    sharedTransactionRepository.deleteById(transaction.id)
+                }
+                android.util.Log.d("SharedAccountDetail", "Deleted ${localTransactions.size} local transactions")
+
+                // 3. Delete the account from local database
+                android.util.Log.d("SharedAccountDetail", "Deleting account from local database...")
+                sharedAccountRepository.deleteById(account.id)
+                android.util.Log.d("SharedAccountDetail", "Successfully deleted account from local database")
+
+                // 4. Clear preferences if this was the default account
+                val defaultSharedAccountId = sharedPrefs.getString(
+                    com.ivy.base.legacy.SharedPrefs.DEFAULT_SHARED_ACCOUNT_ID,
+                    null
+                )
+                if (defaultSharedAccountId == account.id.value.toString()) {
+                    android.util.Log.d("SharedAccountDetail", "Clearing default shared account preferences")
+                    sharedPrefs.putBoolean(com.ivy.base.legacy.SharedPrefs.USE_SHARED_ACCOUNT_BY_DEFAULT, false)
+                    sharedPrefs.remove(com.ivy.base.legacy.SharedPrefs.DEFAULT_SHARED_ACCOUNT_ID)
+                }
+
+                // 5. Set accountDeleted flag to trigger navigation
+                withContext(Dispatchers.Main) {
+                    android.util.Log.d("SharedAccountDetail", "Setting accountDeleted flag")
+                    accountDeleted = true
+                    showLinkAccountModal = false
+                    android.widget.Toast.makeText(
+                        context,
+                        "Shared account deleted successfully",
+                        android.widget.Toast.LENGTH_SHORT
+                    ).show()
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("SharedAccountDetail", "Error deleting shared account", e)
+                e.printStackTrace()
+                withContext(Dispatchers.Main) {
+                    android.widget.Toast.makeText(
+                        context,
+                        "Failed to delete account: ${e.message}",
+                        android.widget.Toast.LENGTH_LONG
+                    ).show()
+                }
+            }
         }
     }
 }

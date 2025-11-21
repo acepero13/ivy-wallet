@@ -403,18 +403,6 @@ private fun BoxWithConstraintsScope.UI(
 
             Spacer(Modifier.height(12.dp))
 
-            if (hasSharedAccounts) {
-                AppSwitch(
-                    lockApp = useSharedAccountByDefault,
-                    onSetLockApp = onSetUseSharedAccountByDefault,
-                    text = stringResource(R.string.use_shared_account_by_default),
-                    description = stringResource(R.string.use_shared_account_by_default_description),
-                    icon = R.drawable.ic_custom_account_s
-                )
-
-                Spacer(Modifier.height(12.dp))
-            }
-
             StartDateOfMonth(
                 startDateOfMonth = startDateOfMonth
             ) {

@@ -11,4 +11,5 @@ sealed interface SharedAccountDetailEvent {
     data object OnShareInvite : SharedAccountDetailEvent
     data object OnDismissLinkAccountModal : SharedAccountDetailEvent
     data class OnLinkAccount(val accountId: AccountId?) : SharedAccountDetailEvent
+    data object OnDeleteAccount : SharedAccountDetailEvent
 }

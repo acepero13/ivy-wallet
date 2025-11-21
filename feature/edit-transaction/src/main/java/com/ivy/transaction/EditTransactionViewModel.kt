@@ -877,11 +877,11 @@ class EditTransactionViewModel @Inject constructor(
             accountsChanged = false
         }
 
-        loadedTransaction().toDomain(transactionMapper)?.let {
-            transactionRepo.save(it)
-        }
+        // Note: We don't save loadedTransaction here because we'll save it as a linked
+        // transaction later (line 919) after converting from shared transaction.
+        // This prevents duplicate transactions in the main dashboard.
 
-        // Then, also save to shared transactions repository
+        // Save to shared transactions repository
         val sharedTransaction = com.ivy.data.model.SharedTransaction(
             id = com.ivy.data.model.SharedTransactionId(UUID.randomUUID()),
             sharedAccountId = sharedAccount.id,

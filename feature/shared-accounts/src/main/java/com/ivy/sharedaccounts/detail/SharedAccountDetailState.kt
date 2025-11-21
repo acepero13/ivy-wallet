@@ -20,5 +20,6 @@ data class SharedAccountDetailState(
     val showLinkAccountModal: Boolean = false,
     val availableAccounts: ImmutableList<Account> = persistentListOf(),
     val pendingLinkAction: Boolean = false,
-    val pendingLinkAccountId: com.ivy.data.model.AccountId? = null
+    val pendingLinkAccountId: com.ivy.data.model.AccountId? = null,
+    val accountDeleted: Boolean = false
 )
