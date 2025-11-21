@@ -78,6 +78,22 @@ fun BoxWithConstraintsScope.SharedAccountDetailScreen(screen: SharedAccountDetai
 private fun BoxWithConstraintsScope.ScreenContent(viewModel: SharedAccountDetailViewModel) {
     val uiState = viewModel.uiState()
 
+    // Load accounts when modal is shown
+    if (uiState.showLinkAccountModal) {
+        LaunchedEffect(Unit) {
+            android.util.Log.d("SharedAccountDetailScreen", "LaunchedEffect: Loading accounts for modal")
+            viewModel.loadAvailableAccounts()
+        }
+    }
+
+    // Perform link account action when triggered
+    if (uiState.pendingLinkAction && uiState.pendingLinkAccountId != null) {
+        LaunchedEffect(uiState.pendingLinkAccountId) {
+            android.util.Log.d("SharedAccountDetailScreen", "LaunchedEffect: Performing link account action")
+            viewModel.performLinkAccount(uiState.pendingLinkAccountId)
+        }
+    }
+
     UI(
         state = uiState,
         onEvent = viewModel::onEvent
@@ -137,6 +153,16 @@ private fun BoxWithConstraintsScope.UI(
                         )
                     )
                 }
+
+                CircleButtonFilled(
+                    icon = R.drawable.ic_settings,
+                    onClick = {
+                        android.util.Log.d("SharedAccountDetailScreen", "Settings button clicked!")
+                        onEvent(SharedAccountDetailEvent.OnEditAccount)
+                    }
+                )
+
+                Spacer(Modifier.width(12.dp))
 
                 CircleButtonFilled(
                     icon = R.drawable.ic_custom_family_m,
@@ -225,6 +251,21 @@ private fun BoxWithConstraintsScope.UI(
             showAddTransactionModal = false
         }
     )
+
+    // Link Account Modal
+    if (state.showLinkAccountModal) {
+        LinkAccountModal(
+            visible = state.showLinkAccountModal,
+            accounts = state.availableAccounts,
+            currentLinkedAccountId = state.sharedAccount?.linkedAccountId,
+            onDismiss = {
+                onEvent(SharedAccountDetailEvent.OnDismissLinkAccountModal)
+            },
+            onSelectAccount = { accountId ->
+                onEvent(SharedAccountDetailEvent.OnLinkAccount(accountId))
+            }
+        )
+    }
 }
 
 @Composable

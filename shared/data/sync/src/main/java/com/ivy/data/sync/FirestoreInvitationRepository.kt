@@ -235,4 +235,150 @@ class FirestoreInvitationRepository @Inject constructor(
             raise("Failed to save shared account: ${e.message}")
         }
     }
+
+    suspend fun saveSharedTransaction(
+        sharedAccountId: SharedAccountId,
+        transactionId: String,
+        type: String,
+        amount: Double,
+        title: String?,
+        description: String?,
+        category: String?,
+        time: Long,
+        createdBy: String,
+        createdAt: Long,
+        updatedAt: Long,
+        updatedBy: String,
+        deleted: Boolean
+    ): Either<String, Unit> = either {
+        try {
+            val data = mutableMapOf<String, Any>(
+                "id" to transactionId,
+                "sharedAccountId" to sharedAccountId.value.toString(),
+                "type" to type,
+                "amount" to amount,
+                "time" to time,
+                "createdBy" to createdBy,
+                "createdAt" to createdAt,
+                "updatedAt" to updatedAt,
+                "updatedBy" to updatedBy,
+                "deleted" to deleted
+            )
+
+            if (title != null) {
+                data["title"] = title
+            }
+            if (description != null) {
+                data["description"] = description
+            }
+            if (category != null) {
+                data["category"] = category
+            }
+
+            firestore.collection(COLLECTION_SHARED_ACCOUNTS)
+                .document(sharedAccountId.value.toString())
+                .collection("transactions")
+                .document(transactionId)
+                .set(data, SetOptions.merge())
+                .await()
+
+            Timber.d("Saved shared transaction $transactionId to Firestore")
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to save shared transaction to Firestore")
+            raise("Failed to save shared transaction: ${e.message}")
+        }
+    }
+
+    suspend fun fetchSharedTransactions(sharedAccountId: SharedAccountId): Either<String, List<Map<String, Any>>> = either {
+        try {
+            val snapshot = firestore.collection(COLLECTION_SHARED_ACCOUNTS)
+                .document(sharedAccountId.value.toString())
+                .collection("transactions")
+                .get()
+                .await()
+
+            val transactions = snapshot.documents.mapNotNull { it.data }
+            Timber.d("Fetched ${transactions.size} transactions for shared account ${sharedAccountId.value}")
+            transactions
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to fetch shared transactions from Firestore")
+            raise("Failed to fetch shared transactions: ${e.message}")
+        }
+    }
+
+    /**
+     * Listen to real-time updates for all shared accounts' transactions
+     * Returns a listener registration that can be removed when no longer needed
+     */
+    fun listenToAllSharedAccountsTransactions(
+        sharedAccountIds: List<SharedAccountId>,
+        onTransactionsChanged: (SharedAccountId, List<Map<String, Any>>) -> Unit,
+        onError: (String) -> Unit
+    ): List<com.google.firebase.firestore.ListenerRegistration> {
+        val listeners = mutableListOf<com.google.firebase.firestore.ListenerRegistration>()
+
+        sharedAccountIds.forEach { accountId ->
+            try {
+                val listener = firestore.collection(COLLECTION_SHARED_ACCOUNTS)
+                    .document(accountId.value.toString())
+                    .collection("transactions")
+                    .addSnapshotListener { snapshot, error ->
+                        if (error != null) {
+                            Timber.e(error, "Error listening to transactions for account ${accountId.value}")
+                            onError("Failed to listen to transactions: ${error.message}")
+                            return@addSnapshotListener
+                        }
+
+                        if (snapshot != null) {
+                            val transactions = snapshot.documents.mapNotNull { it.data }
+                            Timber.d("Real-time update: ${transactions.size} transactions for account ${accountId.value}")
+                            onTransactionsChanged(accountId, transactions)
+                        }
+                    }
+
+                listeners.add(listener)
+                Timber.d("Started listening to transactions for account ${accountId.value}")
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to set up listener for account ${accountId.value}")
+                onError("Failed to set up listener: ${e.message}")
+            }
+        }
+
+        return listeners
+    }
+
+    /**
+     * Listen to real-time updates for a single shared account's transactions
+     */
+    fun listenToSharedAccountTransactions(
+        sharedAccountId: SharedAccountId,
+        onTransactionsChanged: (List<Map<String, Any>>) -> Unit,
+        onError: (String) -> Unit
+    ): com.google.firebase.firestore.ListenerRegistration? {
+        return try {
+            val listener = firestore.collection(COLLECTION_SHARED_ACCOUNTS)
+                .document(sharedAccountId.value.toString())
+                .collection("transactions")
+                .addSnapshotListener { snapshot, error ->
+                    if (error != null) {
+                        Timber.e(error, "Error listening to transactions for account ${sharedAccountId.value}")
+                        onError("Failed to listen to transactions: ${error.message}")
+                        return@addSnapshotListener
+                    }
+
+                    if (snapshot != null) {
+                        val transactions = snapshot.documents.mapNotNull { it.data }
+                        Timber.d("Real-time update: ${transactions.size} transactions for account ${sharedAccountId.value}")
+                        onTransactionsChanged(transactions)
+                    }
+                }
+
+            Timber.d("Started listening to transactions for account ${sharedAccountId.value}")
+            listener
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to set up listener for account ${sharedAccountId.value}")
+            onError("Failed to set up listener: ${e.message}")
+            null
+        }
+    }
 }

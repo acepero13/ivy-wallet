@@ -14,6 +14,7 @@ import com.ivy.data.model.SharedTransactionId
 import com.ivy.data.model.SharedTransactionType
 import com.ivy.data.model.primitive.NotBlankTrimmedString
 import com.ivy.data.repository.SharedTransactionRepository
+import com.ivy.data.sync.FirestoreInvitationRepository
 import com.ivy.ui.ComposeViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -29,6 +30,7 @@ class AddSharedTransactionViewModel @Inject constructor(
     @ApplicationContext
     private val context: Context,
     private val sharedTransactionRepository: SharedTransactionRepository,
+    private val firestoreInvitationRepository: FirestoreInvitationRepository,
 ) : ComposeViewModel<AddSharedTransactionState, AddSharedTransactionEvent>() {
 
     private var sharedAccountId by mutableStateOf<SharedAccountId?>(null)
@@ -108,13 +110,32 @@ class AddSharedTransactionViewModel @Inject constructor(
                     deleted = false
                 )
 
+                // Save to local database
                 sharedTransactionRepository.save(transaction)
+
+                // Also save to Firestore for cross-device sync
+                firestoreInvitationRepository.saveSharedTransaction(
+                    sharedAccountId = transaction.sharedAccountId,
+                    transactionId = transaction.id.value.toString(),
+                    type = transaction.type.name,
+                    amount = transaction.amount,
+                    title = transaction.title?.value,
+                    description = transaction.description?.value,
+                    category = transaction.category?.value?.toString(),
+                    time = transaction.time.toEpochMilli(),
+                    createdBy = transaction.createdBy,
+                    createdAt = transaction.createdAt.toEpochMilli(),
+                    updatedAt = transaction.updatedAt.toEpochMilli(),
+                    updatedBy = transaction.updatedBy,
+                    deleted = transaction.deleted
+                )
 
                 isSaving = false
                 resetForm()
                 onTransactionSaved?.invoke()
             } catch (e: Exception) {
                 isSaving = false
+                android.util.Log.e("AddSharedTransaction", "Error saving transaction", e)
                 // TODO: Show error to user
             }
         }

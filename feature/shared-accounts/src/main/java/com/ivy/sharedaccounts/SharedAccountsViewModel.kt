@@ -15,7 +15,10 @@ import com.ivy.data.auth.AuthRepository
 import com.ivy.data.model.Account
 import com.ivy.data.model.AccountId
 import com.ivy.data.model.SharedAccount
+import com.ivy.data.model.CategoryId
 import com.ivy.data.model.SharedAccountId
+import com.ivy.data.model.SharedTransactionId
+import com.ivy.data.model.SharedTransactionType
 import com.ivy.data.model.primitive.AssetCode
 import com.ivy.data.model.primitive.NotBlankTrimmedString
 import com.ivy.data.repository.AccountRepository
@@ -30,8 +33,10 @@ import com.ivy.wallet.domain.action.settings.BaseCurrencyAct
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.time.Instant
 import java.util.UUID
 import javax.inject.Inject
@@ -120,6 +125,9 @@ class SharedAccountsViewModel @Inject constructor(
             loadAccounts()
             loadBaseCurrency()
             // TODO: Load current user UID from AuthRepository
+
+            // Set up real-time listeners for all shared accounts
+            setupRealtimeListeners()
         }
     }
 
@@ -135,6 +143,77 @@ class SharedAccountsViewModel @Inject constructor(
             isLoading = false
         }
     }
+
+    private fun setupRealtimeListeners() {
+        // Get all shared account IDs
+        val accountIds = sharedAccounts.map { it.id }
+
+        if (accountIds.isEmpty()) {
+            android.util.Log.d("SharedAccounts", "No shared accounts to listen to")
+            return
+        }
+
+        android.util.Log.d("SharedAccounts", "Setting up real-time listeners for ${accountIds.size} shared accounts")
+
+        // Set up listeners for all shared accounts
+        // Note: Listeners are managed by FirestoreInvitationRepository
+        firestoreInvitationRepository.listenToAllSharedAccountsTransactions(
+            sharedAccountIds = accountIds,
+            onTransactionsChanged = { accountId, transactionsData ->
+                android.util.Log.d("SharedAccounts", "Real-time update: ${transactionsData.size} transactions for account ${accountId.value}")
+
+                // Sync transactions to local database in background
+                viewModelScope.launch(Dispatchers.IO) {
+                    syncTransactionsToLocal(accountId, transactionsData)
+                }
+            },
+            onError = { error ->
+                android.util.Log.e("SharedAccounts", "Listener error: $error")
+            }
+        )
+
+        android.util.Log.d("SharedAccounts", "Real-time listeners set up successfully")
+    }
+
+    private suspend fun syncTransactionsToLocal(
+        accountId: SharedAccountId,
+        transactionsData: List<Map<String, Any>>
+    ) {
+        try {
+            android.util.Log.d("SharedAccounts", "Syncing ${transactionsData.size} transactions to local DB for account ${accountId.value}")
+
+            transactionsData.forEach { data ->
+                try {
+                    val transaction = com.ivy.data.model.SharedTransaction(
+                        id = SharedTransactionId(UUID.fromString(data["id"] as String)),
+                        sharedAccountId = accountId,
+                        type = SharedTransactionType.valueOf(data["type"] as String),
+                        amount = (data["amount"] as? Number)?.toDouble() ?: 0.0,
+                        title = (data["title"] as? String)?.let { NotBlankTrimmedString.unsafe(it) },
+                        description = (data["description"] as? String)?.let { NotBlankTrimmedString.unsafe(it) },
+                        category = (data["category"] as? String)?.let { CategoryId(UUID.fromString(it)) },
+                        time = Instant.ofEpochMilli(data["time"] as Long),
+                        createdBy = data["createdBy"] as String,
+                        createdAt = Instant.ofEpochMilli(data["createdAt"] as Long),
+                        updatedAt = Instant.ofEpochMilli(data["updatedAt"] as Long),
+                        updatedBy = data["updatedBy"] as String,
+                        deleted = data["deleted"] as? Boolean ?: false
+                    )
+
+                    // Save to local Room database
+                    sharedTransactionRepository.save(transaction)
+                    android.util.Log.d("SharedAccounts", "Synced transaction: ${transaction.id.value}")
+                } catch (e: Exception) {
+                    android.util.Log.e("SharedAccounts", "Error parsing transaction: ${data["id"]}", e)
+                }
+            }
+
+            android.util.Log.d("SharedAccounts", "Successfully synced all transactions for account ${accountId.value}")
+        } catch (e: Exception) {
+            android.util.Log.e("SharedAccounts", "Error syncing transactions for account ${accountId.value}", e)
+        }
+    }
+
 
     private suspend fun loadBaseCurrency() {
         baseCurrency = baseCurrencyAct(Unit)

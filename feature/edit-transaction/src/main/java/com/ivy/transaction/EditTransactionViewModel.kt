@@ -30,6 +30,7 @@ import com.ivy.data.repository.TagRepository
 import com.ivy.data.repository.TransactionRepository
 import com.ivy.data.repository.mapper.TagMapper
 import com.ivy.data.repository.mapper.TransactionMapper
+import com.ivy.data.sync.FirestoreInvitationRepository
 import com.ivy.domain.features.Features
 import com.ivy.legacy.data.EditTransactionDisplayLoan
 import com.ivy.legacy.datamodel.Account
@@ -109,6 +110,7 @@ class EditTransactionViewModel @Inject constructor(
     private val dateTimePicker: DateTimePicker,
     private val sharedAccountRepository: com.ivy.data.repository.SharedAccountRepository,
     private val sharedTransactionRepository: com.ivy.data.repository.SharedTransactionRepository,
+    private val firestoreInvitationRepository: FirestoreInvitationRepository,
 ) : ComposeViewModel<EditTransactionViewState, EditTransactionViewEvent>() {
 
     private var transactionType by mutableStateOf(TransactionType.EXPENSE)
@@ -752,10 +754,15 @@ class EditTransactionViewModel @Inject constructor(
     private suspend fun saveInternal(closeScreen: Boolean) {
         try {
             ioThread {
+                android.util.Log.d("EditTransactionVM", "=== SAVE TRANSACTION START ===")
+                android.util.Log.d("EditTransactionVM", "isSharedTransaction=$isSharedTransaction, selectedSharedAccount=$selectedSharedAccount")
+
                 // Check if this should be saved as a shared transaction
                 if (isSharedTransaction && selectedSharedAccount != null) {
+                    android.util.Log.d("EditTransactionVM", ">>> Taking SHARED transaction path")
                     saveSharedTransaction()
                 } else {
+                    android.util.Log.d("EditTransactionVM", ">>> Taking REGULAR transaction path")
                     // Save as regular transaction
                     val amount = amount.toBigDecimal()
 
@@ -891,8 +898,101 @@ class EditTransactionViewModel @Inject constructor(
             deleted = false
         )
 
+        // Save to SharedTransactionRepository
         sharedTransactionRepository.save(sharedTransaction)
+        android.util.Log.d("EditTransactionVM", "Saved to SharedTransactionRepository: ${sharedTransaction.id.value}")
+
+        // Also save to regular TransactionRepository so it appears in main dashboard
+        val linkedAccountId = sharedAccount.linkedAccountId
+        android.util.Log.d("EditTransactionVM", "Linked account ID: ${linkedAccountId?.value}, Currency: ${sharedAccount.currency.code}")
+
+        if (linkedAccountId != null) {
+            val regularTransaction = convertSharedToRegularTransaction(
+                sharedTransaction = sharedTransaction,
+                linkedAccountId = linkedAccountId,
+                currency = sharedAccount.currency
+            )
+            android.util.Log.d("EditTransactionVM", "Converted transaction: $regularTransaction")
+
+            if (regularTransaction != null) {
+                try {
+                    transactionRepo.save(regularTransaction)
+                    android.util.Log.d("EditTransactionVM", "Successfully saved to TransactionRepository: ${regularTransaction.id.value}")
+                } catch (e: Exception) {
+                    android.util.Log.e("EditTransactionVM", "Failed to save to TransactionRepository", e)
+                }
+            } else {
+                android.util.Log.e("EditTransactionVM", "Failed to convert shared transaction to regular transaction")
+            }
+        } else {
+            android.util.Log.w("EditTransactionVM", "No linked account for shared account ${sharedAccount.id.value}")
+        }
+
+        // Also save to Firestore for cross-device sync
+        firestoreInvitationRepository.saveSharedTransaction(
+            sharedAccountId = sharedTransaction.sharedAccountId,
+            transactionId = sharedTransaction.id.value.toString(),
+            type = sharedTransaction.type.name,
+            amount = sharedTransaction.amount,
+            title = sharedTransaction.title?.value,
+            description = sharedTransaction.description?.value,
+            category = sharedTransaction.category?.value?.toString(),
+            time = sharedTransaction.time.toEpochMilli(),
+            createdBy = sharedTransaction.createdBy,
+            createdAt = sharedTransaction.createdAt.toEpochMilli(),
+            updatedAt = sharedTransaction.updatedAt.toEpochMilli(),
+            updatedBy = sharedTransaction.updatedBy,
+            deleted = sharedTransaction.deleted
+        )
+
         toaster.show("Saved to ${sharedAccount.name.value}")
+    }
+
+    private fun convertSharedToRegularTransaction(
+        sharedTransaction: com.ivy.data.model.SharedTransaction,
+        linkedAccountId: com.ivy.data.model.AccountId,
+        currency: com.ivy.data.model.primitive.AssetCode
+    ): com.ivy.data.model.Transaction? {
+        return try {
+            val amount = com.ivy.data.model.primitive.PositiveDouble.unsafe(sharedTransaction.amount)
+            val value = com.ivy.data.model.PositiveValue(amount = amount, asset = currency)
+            val metadata = com.ivy.data.model.TransactionMetadata(
+                recurringRuleId = null,
+                paidForDateTime = null,
+                loanId = null,
+                loanRecordId = null
+            )
+
+            when (sharedTransaction.type) {
+                com.ivy.data.model.SharedTransactionType.EXPENSE -> com.ivy.data.model.Expense(
+                    id = com.ivy.data.model.TransactionId(sharedTransaction.id.value),
+                    title = sharedTransaction.title,
+                    description = sharedTransaction.description,
+                    category = sharedTransaction.category,
+                    time = sharedTransaction.time,
+                    settled = true,
+                    metadata = metadata,
+                    tags = emptyList(),
+                    value = value,
+                    account = linkedAccountId
+                )
+                com.ivy.data.model.SharedTransactionType.INCOME -> com.ivy.data.model.Income(
+                    id = com.ivy.data.model.TransactionId(sharedTransaction.id.value),
+                    title = sharedTransaction.title,
+                    description = sharedTransaction.description,
+                    category = sharedTransaction.category,
+                    time = sharedTransaction.time,
+                    settled = true,
+                    metadata = metadata,
+                    tags = emptyList(),
+                    value = value,
+                    account = linkedAccountId
+                )
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("EditTransactionVM", "Error converting shared transaction to regular transaction", e)
+            null
+        }
     }
 
     @JvmName("setHasChangesMethod")

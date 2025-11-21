@@ -13,12 +13,19 @@ import com.ivy.data.DataObserver
 import com.ivy.data.DataWriteEvent
 import com.ivy.data.auth.AuthRepository
 import com.ivy.data.auth.AuthUser
+import com.ivy.data.model.Account
+import com.ivy.data.model.AccountId
+import com.ivy.data.model.CategoryId
 import com.ivy.data.model.SharedAccount
 import com.ivy.data.model.SharedAccountId
 import com.ivy.data.model.SharedTransaction
+import com.ivy.data.model.SharedTransactionId
 import com.ivy.data.model.SharedTransactionType
+import com.ivy.data.model.primitive.NotBlankTrimmedString
+import com.ivy.data.repository.AccountRepository
 import com.ivy.data.repository.SharedAccountRepository
 import com.ivy.data.repository.SharedTransactionRepository
+import com.ivy.data.sync.FirestoreInvitationRepository
 import com.ivy.domain.usecase.invitation.CreateInvitationUseCase
 import com.ivy.domain.usecase.invitation.GenerateInviteLinkUseCase
 import com.ivy.ui.ComposeViewModel
@@ -30,6 +37,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.time.Instant
+import java.util.UUID
 import javax.inject.Inject
 
 @SuppressLint("StaticFieldLeak")
@@ -39,10 +48,12 @@ class SharedAccountDetailViewModel @Inject constructor(
     private val context: Context,
     private val sharedAccountRepository: SharedAccountRepository,
     private val sharedTransactionRepository: SharedTransactionRepository,
+    private val accountRepository: AccountRepository,
     private val dataObserver: DataObserver,
     private val authRepository: AuthRepository,
     private val createInvitationUseCase: CreateInvitationUseCase,
     private val generateInviteLinkUseCase: GenerateInviteLinkUseCase,
+    private val firestoreInvitationRepository: FirestoreInvitationRepository,
 ) : ComposeViewModel<SharedAccountDetailState, SharedAccountDetailEvent>() {
 
     private var sharedAccountId by mutableStateOf<SharedAccountId?>(null)
@@ -52,6 +63,10 @@ class SharedAccountDetailViewModel @Inject constructor(
     private var totalExpense by mutableStateOf(0.0)
     private var balance by mutableStateOf(0.0)
     private var isLoading by mutableStateOf(true)
+    private var showLinkAccountModal by mutableStateOf(false)
+    private var availableAccounts by mutableStateOf<ImmutableList<Account>>(emptyList<Account>().toImmutableList())
+    private var pendingLinkAction by mutableStateOf(false)
+    private var pendingLinkAccountId by mutableStateOf<AccountId?>(null)
 
     init {
         android.util.Log.d("SharedAccountDetail", "ViewModel initialized: ${this.hashCode()}")
@@ -80,7 +95,11 @@ class SharedAccountDetailViewModel @Inject constructor(
             totalIncome = totalIncome,
             totalExpense = totalExpense,
             balance = balance,
-            isLoading = isLoading
+            isLoading = isLoading,
+            showLinkAccountModal = showLinkAccountModal,
+            availableAccounts = availableAccounts,
+            pendingLinkAction = pendingLinkAction,
+            pendingLinkAccountId = pendingLinkAccountId
         )
     }
 
@@ -96,12 +115,92 @@ class SharedAccountDetailViewModel @Inject constructor(
                 // TODO: Navigate back
             }
             is SharedAccountDetailEvent.OnEditAccount -> {
-                // TODO: Navigate to edit account screen
+                onEditAccount()
             }
             is SharedAccountDetailEvent.OnShareInvite -> {
                 android.util.Log.d("SharedAccountDetail", "OnShareInvite event received")
                 android.widget.Toast.makeText(context, "Share button clicked!", android.widget.Toast.LENGTH_SHORT).show()
                 shareInvite()
+            }
+            is SharedAccountDetailEvent.OnDismissLinkAccountModal -> {
+                showLinkAccountModal = false
+            }
+            is SharedAccountDetailEvent.OnLinkAccount -> {
+                onLinkAccount(event.accountId)
+            }
+        }
+    }
+
+    private fun onEditAccount() {
+        android.util.Log.d("SharedAccountDetail", "onEditAccount() called - SIMPLE VERSION")
+        // Just show the modal - accounts will be loaded by LaunchedEffect in the modal
+        showLinkAccountModal = true
+        android.util.Log.d("SharedAccountDetail", "Modal visibility set to: $showLinkAccountModal")
+    }
+
+    suspend fun loadAvailableAccounts() {
+        android.util.Log.d("SharedAccountDetail", "loadAvailableAccounts() called")
+        try {
+            val accounts = accountRepository.findAll()
+            android.util.Log.d("SharedAccountDetail", "Found ${accounts.size} accounts")
+            availableAccounts = accounts.toImmutableList()
+            android.util.Log.d("SharedAccountDetail", "availableAccounts updated with ${availableAccounts.size} items")
+        } catch (e: Exception) {
+            android.util.Log.e("SharedAccountDetail", "Error loading available accounts", e)
+            e.printStackTrace()
+        }
+    }
+
+    private fun onLinkAccount(accountId: AccountId?) {
+        android.util.Log.d("SharedAccountDetail", "onLinkAccount called with accountId: ${accountId?.value}")
+        // Store the account ID to be processed
+        pendingLinkAccountId = accountId
+        pendingLinkAction = true
+    }
+
+    suspend fun performLinkAccount(accountId: AccountId?) {
+        android.util.Log.d("SharedAccountDetail", "performLinkAccount - starting link process")
+        withContext(Dispatchers.IO) {
+            try {
+                val account = sharedAccount
+                android.util.Log.d("SharedAccountDetail", "Current shared account: ${account?.name?.value}")
+                if (account != null) {
+                    val updatedAccount = account.copy(
+                        linkedAccountId = accountId,
+                        updatedAt = Instant.now()
+                    )
+                    android.util.Log.d("SharedAccountDetail", "Saving updated account to Room...")
+                    sharedAccountRepository.save(updatedAccount)
+
+                    android.util.Log.d("SharedAccountDetail", "Saving to Firestore...")
+                    // Also update in Firestore
+                    firestoreInvitationRepository.saveSharedAccount(
+                        id = updatedAccount.id,
+                        name = updatedAccount.name.value,
+                        currency = updatedAccount.currency.code,
+                        owners = updatedAccount.owners,
+                        createdBy = updatedAccount.createdBy,
+                        createdAt = updatedAccount.createdAt.toEpochMilli(),
+                        updatedAt = updatedAccount.updatedAt.toEpochMilli(),
+                        linkedAccountId = accountId?.value?.toString()
+                    )
+
+                    android.util.Log.d("SharedAccountDetail", "Linked account updated successfully")
+
+                    withContext(Dispatchers.Main) {
+                        showLinkAccountModal = false
+                        pendingLinkAction = false
+                        pendingLinkAccountId = null
+                    }
+                    loadData()
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("SharedAccountDetail", "Failed to link account", e)
+                e.printStackTrace()
+                withContext(Dispatchers.Main) {
+                    pendingLinkAction = false
+                    pendingLinkAccountId = null
+                }
             }
         }
     }
@@ -259,7 +358,58 @@ class SharedAccountDetailViewModel @Inject constructor(
         android.util.Log.d("SharedAccountDetail", "Calling loadData with IO dispatcher")
 
         withContext(Dispatchers.IO) {
+            // First, sync transactions from Firestore to local database
+            syncTransactionsFromFirestore(id)
+            // Then load from local database
             loadData()
+        }
+    }
+
+    private suspend fun syncTransactionsFromFirestore(accountId: SharedAccountId) {
+        android.util.Log.d("SharedAccountDetail", "Syncing transactions from Firestore for account: ${accountId.value}")
+
+        try {
+            val result = firestoreInvitationRepository.fetchSharedTransactions(accountId)
+
+            result.fold(
+                ifLeft = { error ->
+                    android.util.Log.e("SharedAccountDetail", "Failed to fetch transactions: $error")
+                },
+                ifRight = { transactionsData ->
+                    android.util.Log.d("SharedAccountDetail", "Fetched ${transactionsData.size} transactions from Firestore")
+
+                    // Parse and save each transaction to local database
+                    transactionsData.forEach { data ->
+                        try {
+                            val transaction = SharedTransaction(
+                                id = SharedTransactionId(UUID.fromString(data["id"] as String)),
+                                sharedAccountId = accountId,
+                                type = SharedTransactionType.valueOf(data["type"] as String),
+                                amount = (data["amount"] as? Number)?.toDouble() ?: 0.0,
+                                title = (data["title"] as? String)?.let { NotBlankTrimmedString.unsafe(it) },
+                                description = (data["description"] as? String)?.let { NotBlankTrimmedString.unsafe(it) },
+                                category = (data["category"] as? String)?.let { CategoryId(UUID.fromString(it)) },
+                                time = Instant.ofEpochMilli(data["time"] as Long),
+                                createdBy = data["createdBy"] as String,
+                                createdAt = Instant.ofEpochMilli(data["createdAt"] as Long),
+                                updatedAt = Instant.ofEpochMilli(data["updatedAt"] as Long),
+                                updatedBy = data["updatedBy"] as String,
+                                deleted = data["deleted"] as? Boolean ?: false
+                            )
+
+                            // Save to local Room database
+                            sharedTransactionRepository.save(transaction)
+                            android.util.Log.d("SharedAccountDetail", "Synced transaction: ${transaction.id.value}")
+                        } catch (e: Exception) {
+                            android.util.Log.e("SharedAccountDetail", "Error parsing transaction: ${data["id"]}", e)
+                        }
+                    }
+
+                    android.util.Log.d("SharedAccountDetail", "Successfully synced all transactions from Firestore")
+                }
+            )
+        } catch (e: Exception) {
+            android.util.Log.e("SharedAccountDetail", "Error syncing transactions from Firestore", e)
         }
     }
 

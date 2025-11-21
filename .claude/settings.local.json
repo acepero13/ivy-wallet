@@ -17,7 +17,10 @@
       "Bash(adb uninstall:*)",
       "Bash(read:*)",
       "Bash(keytool:*)",
-      "Bash(adb devices:*)"
+      "Bash(adb devices:*)",
+      "Bash(adb exec-out:*)",
+      "Bash(/tmp/ivywallet_update.db)",
+      "Bash(/tmp/ivywallet_real.db)"
     ],
     "deny": [],
     "ask": []
