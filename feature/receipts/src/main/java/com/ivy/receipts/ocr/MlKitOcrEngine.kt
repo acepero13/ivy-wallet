@@ -29,9 +29,10 @@ class MlKitOcrEngine @Inject constructor(
 
     override val engineType = OcrEngineType.ML_KIT
 
-    override suspend fun recognizeText(imageUri: Uri): Either<String, OcrReceipt> {
+    override suspend fun recognizeText(imageUri: Uri): Either<String, OcrResult> {
 
         return try {
+            val startTime = System.currentTimeMillis()
             val inputImage = InputImage.fromFilePath(context, imageUri)
             Timber.d("Created InputImage from $imageUri, size: ${inputImage.width}x${inputImage.height}")
             // Process image with ML Kit
@@ -40,10 +41,16 @@ class MlKitOcrEngine @Inject constructor(
             // Extract blocks and calculate confidence
             val blocks = extractBlocksFrom(visionText)
             val confidence = calculateConfidence(visionText)
-            val receipt = parser.parse(blocks = blocks)
+            val processingTime = System.currentTimeMillis() - startTime
+            val result = OcrResult(
+                fullText = visionText.text,
+                blocks = blocks,
+                confidence = confidence,
+                processingTimeMs = processingTime
+            )
 
 
-            Either.Right(receipt)
+            Either.Right(result)
         } catch (e: Exception) {
             Timber.e(e, "ML Kit OCR failed for URI: $imageUri")
             Either.Left("OCR failed: ${e.message}")

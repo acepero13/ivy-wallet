@@ -51,30 +51,43 @@ class ReceiptImageParsingTest {
 
 
 
+
+
     @Test
-    fun testParseReceiptFromAssets_RegexParser() {
+    fun testParseBeregNotWorking() {
         runBlocking {
             try {
-                val inputStream = context.assets.open("dm1.jpeg")
+                val inputStream = context.assets.open("betreg_not_working.jpg")
                 val bitmap = BitmapFactory.decodeStream(inputStream)
                 inputStream.close()
 
                 val ocrBlocks = performOcr(bitmap)
 
-                // Debug: Print all extracted text
-                println("=== OCR BLOCKS (Regex Parser) ===")
+                // Debug: Print ALL extracted text with coordinates
+                println("=== BETREG RECEIPT OCR OUTPUT ===")
                 ocrBlocks.forEachIndexed { index, block ->
-                    println("Block $index: ${block.text} | BBox: ${block.boundingBox}")
+                    val bbox = block.boundingBox
+                    if (bbox != null) {
+                        println("$index = \"${block.text}\" | X:${bbox.left}-${bbox.right} Y:${bbox.top}-${bbox.bottom}")
+                    } else {
+                        println("$index = \"${block.text}\" | No bbox")
+                    }
                 }
 
-                val result = parser.parse(ocrBlocks)
+                // Debug: Check if "Betrag" is recognized as a keyword
+                val germanPatterns = com.ivy.receipts.parser.locales.GermanReceiptPatterns()
+                println("=== KEYWORD CHECK ===")
+                println("Is 'Betrag' a total keyword? ${germanPatterns.isTotalKeyword("Betrag")}")
+                println("Is 'SUMME' a total keyword? ${germanPatterns.isTotalKeyword("SUMME")}")
 
-                println("=== REGEX PARSER RESULT ===")
+                val result = spatialParser.parse(ocrBlocks)
+
+                println("=== SPATIAL PARSER RESULT ===")
                 println("Total: ${result.total}")
                 println("Currency: ${result.currency}")
 
-                result.total shouldBe  27.66
-                result.currency shouldNotBe null
+                // This will fail if total is 0.0, which helps us debug
+                result.total.toDouble() shouldBeGreaterThan 0.0
             } catch (e: Exception) {
                 println("Error: ${e.message}")
                 e.printStackTrace()
@@ -110,7 +123,50 @@ class ReceiptImageParsingTest {
                 println("Total: ${result.total}")
                 println("Currency: ${result.currency}")
 
-                result.total shouldBe  27.66
+                result.total.toDouble() shouldBe  27.66
+                result.currency shouldNotBe null
+            } catch (e: Exception) {
+                println("Error: ${e.message}")
+                e.printStackTrace()
+                throw e
+            }
+        }
+    }
+
+    @Test
+    fun testParseReceiptFromAssets_NewPic_SpatialParser() {
+        runBlocking {
+            try {
+                val inputStream = context.assets.open("betreg_not_working.jpg")
+                val bitmap = BitmapFactory.decodeStream(inputStream)
+                inputStream.close()
+
+                val ocrBlocks = performOcr(bitmap)
+
+                // Debug: Print all extracted text with coordinates
+                println("=== OCR BLOCKS (Spatial Parser) ===")
+                ocrBlocks.forEachIndexed { index, block ->
+                    val bbox = block.boundingBox
+                    if (bbox != null) {
+                        println("Block $index: '${block.text}' | X:${bbox.left}-${bbox.right} Y:${bbox.top}-${bbox.bottom}")
+                    } else {
+                        println("Block $index: '${block.text}' | No bounding box")
+                    }
+                }
+
+                // Debug: Check if "Betrag" is recognized as a keyword
+                val germanPatterns = com.ivy.receipts.parser.locales.GermanReceiptPatterns()
+                println("=== KEYWORD CHECK ===")
+                println("Is 'Betrag' a total keyword? ${germanPatterns.isTotalKeyword("Betrag")}")
+                println("Is 'SUMME' a total keyword? ${germanPatterns.isTotalKeyword("SUMME")}")
+
+                val result = spatialParser.parse(ocrBlocks)
+
+                println("=== SPATIAL PARSER RESULT ===")
+                println("Total: ${result.total}")
+                println("Currency: ${result.currency}")
+
+                result.total.toDouble() shouldBe  51.54
                 result.currency shouldNotBe null
             } catch (e: Exception) {
                 println("Error: ${e.message}")

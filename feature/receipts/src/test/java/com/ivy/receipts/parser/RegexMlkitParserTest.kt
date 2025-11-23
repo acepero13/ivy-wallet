@@ -54,7 +54,7 @@ class RegexMlkitParserTest {
         val result = germanParser.parse(blocks)
 
         // then
-        result.total shouldBe 8.47
+        result.total.toDouble() shouldBe 8.47
         result.currency shouldBe "EUR"
         result.date.toLocalDate() shouldBe LocalDate.of(2024, 3, 15)
     }
@@ -79,7 +79,7 @@ class RegexMlkitParserTest {
         val result = germanParser.parse(blocks)
 
         // then
-        result.total shouldBe 15.50
+        result.total.toDouble() shouldBe 15.50
         result.currency shouldBe "EUR"
     }
 
@@ -100,7 +100,7 @@ class RegexMlkitParserTest {
         val result = germanParser.parse(blocks)
 
         // then
-        result.total shouldBe 10.50
+        result.total.toDouble() shouldBe 10.50
     }
 
     // ========== English Receipt Tests ==========
@@ -130,7 +130,7 @@ class RegexMlkitParserTest {
         val result = englishParser.parse(blocks)
 
         // then
-        result.total shouldBe 9.47
+        result.total.toDouble() shouldBe 9.47
         result.currency shouldBe "USD"
         result.date.toLocalDate() shouldBe LocalDate.of(2024, 3, 15)
     }
@@ -155,7 +155,7 @@ class RegexMlkitParserTest {
         val result = englishParser.parse(blocks)
 
         // then
-        result.total shouldBe 40.50
+        result.total.toDouble() shouldBe 40.50
         result.currency shouldBe "USD"
     }
 
@@ -177,7 +177,7 @@ class RegexMlkitParserTest {
         val result = englishParser.parse(blocks)
 
         // then
-        result.total shouldBe 30.00
+        result.total.toDouble() shouldBe 30.00
     }
 
     // ========== Auto-Detection Tests ==========
@@ -204,7 +204,7 @@ class RegexMlkitParserTest {
         val result = autoParser.parse(blocks)
 
         // then
-        result.total shouldBe 4.30
+        result.total.toDouble() shouldBe 4.30
         result.currency shouldBe "EUR"
     }
 
@@ -230,7 +230,7 @@ class RegexMlkitParserTest {
         val result = autoParser.parse(blocks)
 
         // then
-        result.total shouldBe 4.30
+        result.total.toDouble() shouldBe 4.30
         result.currency shouldBe "USD"
     }
 
@@ -245,7 +245,7 @@ class RegexMlkitParserTest {
         val result = germanParser.parse(blocks)
 
         // then
-        result.total shouldBe 0.0
+        result.total.toDouble() shouldBe 0.0
     }
 
     @Test
@@ -265,7 +265,7 @@ class RegexMlkitParserTest {
         val result = germanParser.parse(blocks)
 
         // then
-        result.total shouldBe 10.00
+        result.total.toDouble() shouldBe 10.00
     }
 
     @Test
@@ -310,7 +310,7 @@ class RegexMlkitParserTest {
         val result = germanParser.parse(blocks)
 
         // then
-        result.total shouldBe 10.00
+        result.total.toDouble() shouldBe 10.00
     }
 
     @Test
@@ -331,7 +331,7 @@ class RegexMlkitParserTest {
         val result = germanParser.parse(blocks)
 
         // then
-        result.total shouldBe 20.49
+        result.total.toDouble() shouldBe 20.49
     }
 
     @Test
@@ -352,7 +352,7 @@ class RegexMlkitParserTest {
         val result = englishParser.parse(blocks)
 
         // then
-        result.total shouldBe 20.49
+        result.total.toDouble() shouldBe 20.49
     }
 
     // ========== Multiple Date Format Tests ==========
@@ -482,7 +482,7 @@ class RegexMlkitParserTest {
         val result = germanParser.parse(blocks)
 
         // then
-        result.total shouldBe 10.05
+        result.total.toDouble() shouldBe 10.05
         result.currency shouldBe "EUR"
         result.date.toLocalDate() shouldBe LocalDate.of(2025, 11, 22)
     }
@@ -521,7 +521,7 @@ class RegexMlkitParserTest {
         val result = englishParser.parse(blocks)
 
         // then
-        result.total shouldBe 33.03
+        result.total.toDouble() shouldBe 33.03
         result.currency shouldBe "USD"
         result.date.toLocalDate() shouldBe LocalDate.of(2025, 11, 22)
     }
@@ -562,7 +562,7 @@ class RegexMlkitParserTest {
         val result = germanParser.parse(blocks)
 
         // then - should find the total amount even though it's far from the keyword
-        result.total shouldBe 27.66
+        result.total.toDouble() shouldBe 27.66
         result.currency shouldBe "EUR"
     }
 
@@ -597,7 +597,7 @@ class RegexMlkitParserTest {
         val result = englishParser.parse(blocks)
 
         // then
-        result.total shouldBe 15.99
+        result.total.toDouble() shouldBe 15.99
         result.currency shouldBe "USD"
     }
 

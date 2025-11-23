@@ -1,10 +1,10 @@
 package com.ivy.receipts.parser
 
-import android.graphics.Rect
 import com.ivy.receipts.ocr.OcrReceipt
 import com.ivy.receipts.ocr.TextBlock
 import com.ivy.receipts.parser.locales.EnglishReceiptPatterns
 import com.ivy.receipts.parser.locales.GermanReceiptPatterns
+import java.math.BigDecimal
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -19,53 +19,34 @@ import kotlin.math.abs
  * This solves the problem of text-only parsing where "SUMME EUR" and "27,66"
  * appear on different lines but are spatially aligned or nearby.
  */
+
 class SpatialReceiptParser(
     private val patterns: ReceiptPatterns = GermanReceiptPatterns()
 ) : ReceiptParseable {
 
+    private val amountExtractor = AmountExtractor()
+    private val rowGrouper = RowGrouper()
+    private val spatialTotalFinder = SpatialTotalFinder()
+    private val fallbackExtractor = FallbackExtractor()
+    private val dateExtractor = DateExtractor()
+
     override fun parse(blocks: List<TextBlock>): OcrReceipt {
-        // Sort blocks by vertical position (top to bottom)
         val sortedBlocks = blocks
             .filter { it.boundingBox != null }
             .sortedBy { it.boundingBox!!.top }
 
-        // Group blocks by horizontal rows (same Y-coordinate range)
-        val rows = groupIntoRows(sortedBlocks)
+        val rows = rowGrouper.group(sortedBlocks)
+        val allLines = blocks.flatMap { it.lines.map { l -> l.text } }
 
-        // Find the total keyword row
-        val totalRow = rows.find { row ->
-            row.any { block -> patterns.isTotalKeyword(block.text) }
-        }
+        val total =
+            spatialTotalFinder.find(rows, patterns) { text ->
+                amountExtractor.extractStandaloneAmount(text, patterns)
+            } ?: fallbackExtractor.extractTotal(allLines, patterns, amountExtractor)
 
-        var total = 0.0
-        var date = Instant.now()
-
-        if (totalRow != null) {
-            // Look for amount in the same row (right side)
-            total = findAmountInRow(totalRow, patterns)
-
-            // If not found in same row, look in nearby rows (spatial proximity)
-            if (total == 0.0) {
-                total = findAmountNearRow(totalRow, rows, patterns)
-            }
-        }
-
-        // Fallback to text-only parsing if spatial approach fails
-        if (total == 0.0) {
-            val allLines = blocks.flatMap { block ->
-                block.lines.map { it.text }
-            }
-            date = extractDate(allLines, patterns)
-            total = extractTotalFromLines(allLines, patterns)
-        } else {
-            val allLines = blocks.flatMap { block ->
-                block.lines.map { it.text }
-            }
-            date = extractDate(allLines, patterns)
-        }
+        val date = dateExtractor.extract(allLines, patterns)
 
         return OcrReceipt(
-            total = total,
+            total = BigDecimal.valueOf(total),
             currency = patterns.defaultCurrency,
             date = date,
             categories = emptyList(),
@@ -73,212 +54,231 @@ class SpatialReceiptParser(
     }
 
     /**
-     * Group text blocks into horizontal rows based on Y-coordinate proximity.
+     * Groups OCR blocks into horizontal rows.
      */
-    private fun groupIntoRows(blocks: List<TextBlock>): List<List<TextBlock>> {
-        if (blocks.isEmpty()) return emptyList()
+    class RowGrouper {
+        fun group(blocks: List<TextBlock>): List<List<TextBlock>> {
+            if (blocks.isEmpty()) return emptyList()
 
-        val rows = mutableListOf<MutableList<TextBlock>>()
-        var currentRow = mutableListOf(blocks[0])
+            val rows = mutableListOf<MutableList<TextBlock>>()
+            var current = mutableListOf(blocks.first())
 
-        for (i in 1 until blocks.size) {
-            val prevBlock = blocks[i - 1]
-            val currentBlock = blocks[i]
+            for (i in 1 until blocks.size) {
+                val prevY = blocks[i - 1].boundingBox!!.centerY()
+                val curr = blocks[i]
+                val currY = curr.boundingBox!!.centerY()
 
-            val prevY = prevBlock.boundingBox!!.centerY()
-            val currentY = currentBlock.boundingBox!!.centerY()
-
-            // If blocks are within 20 pixels vertically, consider them same row
-            if (abs(currentY - prevY) < 20) {
-                currentRow.add(currentBlock)
-            } else {
-                // Start new row
-                rows.add(currentRow)
-                currentRow = mutableListOf(currentBlock)
-            }
-        }
-        rows.add(currentRow)
-
-        // Sort each row by X-coordinate (left to right)
-        return rows.map { row ->
-            row.sortedBy { it.boundingBox!!.left }
-        }
-    }
-
-    /**
-     * Check if text contains a total keyword.
-     */
-
-
-    /**
-     * Find an amount in the same row as the keyword (to the right).
-     */
-    private fun findAmountInRow(row: List<TextBlock>, patterns: ReceiptPatterns): Double {
-        // Find the rightmost number in the row
-        for (block in row.reversed()) {
-            val amount = extractStandaloneAmount(block.text, patterns)
-            if (amount > 0) {
-                return amount
-            }
-        }
-        return 0.0
-    }
-
-    /**
-     * Find an amount in nearby rows using spatial proximity.
-     */
-    private fun findAmountNearRow(
-        keywordRow: List<TextBlock>,
-        allRows: List<List<TextBlock>>,
-        patterns: ReceiptPatterns
-    ): Double {
-        val keywordRowIndex = allRows.indexOf(keywordRow)
-        if (keywordRowIndex == -1) return 0.0
-
-        // Get X-coordinate of keyword (to find amounts aligned with it)
-        val keywordBlock = keywordRow.find { patterns.isTotalKeyword(it.text) }
-        val keywordRight = keywordBlock?.boundingBox?.right ?: 0
-
-        // Look in next few rows for amounts spatially aligned with keyword
-        val candidates = mutableListOf<Pair<Int, Double>>()
-        val negatives = mutableListOf<Pair<Int, Double>>()
-
-        for (i in (keywordRowIndex + 1) until minOf(keywordRowIndex + 10, allRows.size)) {
-            val row = allRows[i]
-
-            // Look for amounts in this row
-            for (block in row) {
-                val blockLeft = block.boundingBox?.left ?: 0
-
-                // Check if block is in similar horizontal position (column alignment)
-                // or on the right side of the receipt (typical for amounts)
-                if (blockLeft >= keywordRight - 100) { // Allow 100px tolerance
-                    val text = block.text.trim()
-
-                    // Check for negative (payment)
-                    if (text.startsWith("-")) {
-                        val negAmount = text.replace("-", "")
-                            .replace(Regex("[€$£\\s]"), "")
-                            .replace(",", ".")
-                            .toDoubleOrNull() ?: 0.0
-                        if (negAmount > 10.0) {
-                            negatives.add(i to negAmount)
-                        }
-                    }
-
-                    // Check for positive amount
-                    val amount = extractStandaloneAmount(text, patterns)
-                    if (amount > 0) {
-                        candidates.add(i to amount)
-                    }
+                // Increased threshold from 20 to 100 to group blocks that are on the same visual row
+                // even if they have some vertical offset (like "Betrag" and "51,54 ER")
+                if (abs(currY - prevY) < 100) {
+                    current.add(curr)
+                } else {
+                    rows.add(current)
+                    current = mutableListOf(curr)
                 }
             }
-        }
 
-        // Use payment matching algorithm
-        for ((posIndex, posAmount) in candidates.reversed()) {
-            val hasMatchingNegative = negatives.any {
-                it.first > posIndex && abs(it.second - posAmount) < 0.01
-            }
-            if (hasMatchingNegative) {
-                return posAmount
-            }
+            rows.add(current)
+            return rows.map { r -> r.sortedBy { it.boundingBox!!.left } }
         }
-
-        // Fallback: take the first significant amount found
-        return candidates.firstOrNull()?.second ?: 0.0
     }
 
     /**
-     * Extract standalone amount from text.
+     * Finds totals using spatial information.
      */
-    private fun extractStandaloneAmount(line: String, patterns: ReceiptPatterns): Double {
-        val cleanLine = line.trim()
+    inner class SpatialTotalFinder {
 
-        // Match amounts with optional currency symbols
-        val amountPattern = Regex("[€$£]?\\s*-?\\d+[,.]\\d{2}\\s*[€$£]?")
-        val match = amountPattern.find(cleanLine) ?: return 0.0
+        fun find(
+            rows: List<List<TextBlock>>,
+            patterns: ReceiptPatterns,
+            extractAmount: (String) -> Double
+        ): Double? {
 
-        val numericPart = match.value.replace(Regex("[€$£\\s-]"), "")
-        return numericPart.toMoney(
-            decimalSeparator = getDecimalSeparator(patterns),
-            thousandsSeparator = getThousandsSeparator(patterns)
-        ).takeIf { it > 0 } ?: 0.0
-    }
+            println("=== SPATIAL TOTAL FINDER DEBUG ===")
+            println("Total rows: ${rows.size}")
 
-    /**
-     * Fallback: Extract total from lines using text-only approach.
-     */
-    private fun extractTotalFromLines(lines: List<String>, patterns: ReceiptPatterns): Double {
-        // Try to match total pattern first
-        for (line in lines) {
-            patterns.totalPattern.find(line)?.let { match ->
-                val amount = extractAmountFromMatch(match, patterns)
+            val totalRow = rows.find { row ->
+                row.any { block -> patterns.isTotalKeyword(block.text) }
+            }
+
+            if (totalRow == null) {
+                println("No row with total keyword found!")
+                return null
+            }
+
+            println("Found total row with ${totalRow.size} blocks:")
+            totalRow.forEach { block ->
+                println("  - '${block.text}' | isTotalKeyword=${patterns.isTotalKeyword(block.text)}")
+            }
+
+            // 1. Find in same row
+            val rowAmount = findAmountInRow(totalRow, extractAmount)
+            println("Amount in same row: $rowAmount")
+            if (rowAmount > 0) return rowAmount
+
+            // 2. Look in rows below
+            val nearAmount = findAmountNearRow(rows, totalRow, patterns, extractAmount)
+            println("Amount near row: $nearAmount")
+            return nearAmount.takeIf { it > 0 }
+        }
+
+        private fun findAmountInRow(
+            row: List<TextBlock>,
+            extractAmount: (String) -> Double
+        ): Double {
+            println("  Checking blocks in row (reversed):")
+            for (block in row.asReversed()) {
+                val amount = extractAmount(block.text)
+                println("    '${block.text}' -> amount=$amount")
                 if (amount > 0) return amount
             }
+            return 0.0
         }
-        return 0.0
-    }
 
-    private fun extractAmountFromMatch(match: MatchResult, patterns: ReceiptPatterns): Double {
-        for (i in 1 until match.groupValues.size) {
-            val value = match.groupValues[i]
-            if (value.matches(Regex("\\d+[,.]\\d+"))) {
-                return value.toMoney(
-                    decimalSeparator = getDecimalSeparator(patterns),
-                    thousandsSeparator = getThousandsSeparator(patterns)
-                )
+        private fun findAmountNearRow(
+            rows: List<List<TextBlock>>,
+            keywordRow: List<TextBlock>,
+            patterns: ReceiptPatterns,
+            extractAmount: (String) -> Double
+        ): Double {
+
+            val keywordIndex = rows.indexOf(keywordRow)
+            val keywordBlock = keywordRow.firstOrNull { patterns.isTotalKeyword(it.text) }
+                ?: return 0.0
+
+            val keywordRight = keywordBlock.boundingBox!!.right
+
+            val candidates = mutableListOf<Pair<Int, Double>>()
+            val negatives = mutableListOf<Pair<Int, Double>>()
+
+            for (i in keywordIndex + 1 until minOf(keywordIndex + 10, rows.size)) {
+                for (block in rows[i]) {
+                    val left = block.boundingBox?.left ?: continue
+                    if (left < keywordRight - 100) continue
+
+                    val text = block.text.trim()
+
+                    // Negative value (payment)
+                    if (text.startsWith("-")) {
+                        val neg = amountExtractor.extractNegativeAmount(text)
+                        if (neg > 10) negatives.add(i to neg)
+                    }
+
+                    // Positive candidate
+                    val amount = extractAmount(text)
+                    if (amount > 0) candidates.add(i to amount)
+                }
             }
+
+            // Match positive with later negative (payment)
+            for ((posIndex, posAmount) in candidates.asReversed()) {
+                if (negatives.any { (negIdx, negAmount) ->
+                        negIdx > posIndex && abs(negAmount - posAmount) < 0.01
+                    }) {
+                    return posAmount
+                }
+            }
+
+            return candidates.firstOrNull()?.second ?: 0.0
         }
-        return 0.0
     }
 
     /**
-     * Extract date from text lines.
+     * Extracts totals via text-based fallback logic.
      */
-    private fun extractDate(lines: List<String>, patterns: ReceiptPatterns): Instant {
-        for (line in lines) {
-            val matchResult = patterns.datePattern.find(line)
-            if (matchResult != null) {
-                val dateStr = matchResult.groupValues[1]
-                for (formatPattern in patterns.dateFormats) {
+    class FallbackExtractor {
+        fun extractTotal(
+            lines: List<String>,
+            patterns: ReceiptPatterns,
+            amountExtractor: AmountExtractor
+        ): Double {
+            for (line in lines) {
+                val match = patterns.totalPattern.find(line)
+                if (match != null) {
+                    val amount = extractAmountFromMatch(match, patterns, amountExtractor)
+                    if (amount > 0) return amount
+                }
+            }
+            return 0.0
+        }
+
+        private fun extractAmountFromMatch(
+            match: MatchResult,
+            patterns: ReceiptPatterns,
+            amountExtractor: AmountExtractor
+        ): Double {
+            for (i in 1 until match.groupValues.size) {
+                val v = match.groupValues[i]
+                if (v.matches(Regex("\\d+[,.]\\d+"))) {
+                    return amountExtractor.parseMoney(v, patterns)
+                }
+            }
+            return 0.0
+        }
+    }
+
+    /**
+     * Extracts dates from lines.
+     */
+    class DateExtractor {
+        fun extract(lines: List<String>, patterns: ReceiptPatterns): Instant {
+            for (line in lines) {
+                val match = patterns.datePattern.find(line) ?: continue
+                val raw = match.groupValues[1]
+
+                for (fmt in patterns.dateFormats) {
                     try {
                         val formatter = DateTimeFormatter.ofPattern(
-                            formatPattern,
-                            Locale.forLanguageTag(patterns.localeCode)
+                            fmt, Locale.forLanguageTag(patterns.localeCode)
                         )
-                        val localDate = LocalDate.parse(dateStr, formatter)
-                        return localDate.atStartOfDay(ZoneId.systemDefault()).toInstant()
-                    } catch (e: Exception) {
-                        // Try next pattern
+                        return LocalDate.parse(raw, formatter)
+                            .atStartOfDay(ZoneId.systemDefault())
+                            .toInstant()
+                    } catch (_: Exception) {
                     }
                 }
             }
-        }
-        return Instant.now()
-    }
-
-    private fun getDecimalSeparator(patterns: ReceiptPatterns): Char {
-        return when (patterns) {
-            is GermanReceiptPatterns ->
-                GermanReceiptPatterns.DECIMAL_SEPARATOR
-
-            is EnglishReceiptPatterns ->
-                EnglishReceiptPatterns.DECIMAL_SEPARATOR
-
-            else -> '.'
+            return Instant.now()
         }
     }
 
-    private fun getThousandsSeparator(patterns: ReceiptPatterns): Char {
-        return when (patterns) {
-            is GermanReceiptPatterns ->
-                GermanReceiptPatterns.THOUSANDS_SEPARATOR
+    /**
+     * Extracts amounts, handles decimals & national formatting.
+     */
+    class AmountExtractor {
 
-            is EnglishReceiptPatterns ->
-                EnglishReceiptPatterns.THOUSANDS_SEPARATOR
+        fun extractStandaloneAmount(text: String, patterns: ReceiptPatterns): Double {
+            val regex = Regex("[€$£]?\\s*-?\\d+[,.]\\d{2}\\s*[€$£]?")
+            val match = regex.find(text.trim()) ?: return 0.0
 
-            else -> ','
+            val raw = match.value.replace(Regex("[€$£\\s-]"), "")
+            return parseMoney(raw, patterns)
         }
+
+        fun extractNegativeAmount(text: String): Double =
+            text.replace("-", "")
+                .replace(Regex("[€$£\\s]"), "")
+                .replace(",", ".")
+                .toDoubleOrNull() ?: 0.0
+
+        fun parseMoney(raw: String, patterns: ReceiptPatterns): Double =
+            raw.toMoney(
+                decimalSeparator = patterns.decimalSeparator(),
+                thousandsSeparator = patterns.thousandsSeparator()
+            )
     }
+}
+
+// ------------------- ReceiptPatterns extensions -------------------
+
+fun ReceiptPatterns.decimalSeparator(): Char = when (this) {
+    is GermanReceiptPatterns -> GermanReceiptPatterns.DECIMAL_SEPARATOR
+    is EnglishReceiptPatterns -> EnglishReceiptPatterns.DECIMAL_SEPARATOR
+    else -> '.'
+}
+
+fun ReceiptPatterns.thousandsSeparator(): Char = when (this) {
+    is GermanReceiptPatterns -> GermanReceiptPatterns.THOUSANDS_SEPARATOR
+    is EnglishReceiptPatterns -> EnglishReceiptPatterns.THOUSANDS_SEPARATOR
+    else -> ','
 }

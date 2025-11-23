@@ -4,6 +4,7 @@ import com.ivy.receipts.ocr.OcrReceipt
 import com.ivy.receipts.ocr.TextBlock
 import com.ivy.receipts.parser.locales.EnglishReceiptPatterns
 import com.ivy.receipts.parser.locales.GermanReceiptPatterns
+import java.math.BigDecimal
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -29,7 +30,7 @@ class RegexMlkitParser(
         val date = extractDate(allLines, currentPatterns)
 
         return OcrReceipt(
-            total = total,
+            total = BigDecimal.valueOf(total),
             currency = currentPatterns.defaultCurrency,
             date = date,
             categories = emptyList() // Categories would be determined by the user or ML classification

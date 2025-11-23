@@ -158,7 +158,6 @@ class EditTransactionViewModel @Inject constructor(
     fun start(screen: EditTransactionScreen) {
         viewModelScope.launch {
             editMode = screen.initialTransactionId != null
-
             baseUserCurrency = baseCurrency()
 
             val tagList = async { getAllTags() }
@@ -192,6 +191,9 @@ class EditTransactionViewModel @Inject constructor(
 
             reset()
 
+            val amount: BigDecimal = screen.ocrAmount ?: BigDecimal.ZERO
+            val dateTime = screen.ocrDate
+
             loadedTransaction = screen.initialTransactionId?.let {
                 trnByIdAct(it)
             } ?: Transaction(
@@ -201,8 +203,9 @@ class EditTransactionViewModel @Inject constructor(
                 ),
                 categoryId = screen.categoryId,
                 type = screen.type,
-                amount = BigDecimal.ZERO,
-                toAmount = BigDecimal.ZERO
+                amount = amount,
+                toAmount = BigDecimal.ZERO,
+                dateTime = dateTime
             )
 
             tags = tagList.await()

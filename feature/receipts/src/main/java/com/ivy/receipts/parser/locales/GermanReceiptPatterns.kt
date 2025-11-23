@@ -9,7 +9,7 @@ import com.ivy.receipts.parser.ReceiptPatterns
 class GermanReceiptPatterns : ReceiptPatterns {
     override fun isTotalKeyword(text: String): Boolean {
         val cleanLine = text.replace(Regex("[€$£]"), "").trim()
-        return cleanLine.matches(Regex("(?i).*(summe|gesamt|total|brutto).*"))
+        return cleanLine.matches(Regex("(?i).*(summe|gesamt|total|brutto|betrag).*"))
     }
 
     override val netPattern = Regex("(?i).*\\b(netto|nettoumsatz)\\b.*?(\\d+[,.]\\d+)")
@@ -19,7 +19,7 @@ class GermanReceiptPatterns : ReceiptPatterns {
     override val itemPattern = Regex("(.+?)\\s+(\\d+,\\d+)\\s*€?\\s*$")
 
     override val totalPattern =
-        Regex("(?i)\\b(summe|gesamt|total)\\b\\s*(?:eur|€)?\\s*:?\\s*(\\d+\\s*,\\s*\\d+)")
+        Regex("(?i)\\b(summe|gesamt|total|betrag)\\b\\s*(?:eur|€)?\\s*:?\\s*(\\d+\\s*,\\s*\\d+)")
 
     override val totalGrossPattern =
         Regex("(?i)\\b(brutto|bruttoumsatz)\\b\\s*(?:eur|€)?\\s*:?\\s*([+*])?\\s*(\\d+\\s*[,.]\\s*\\d+)")

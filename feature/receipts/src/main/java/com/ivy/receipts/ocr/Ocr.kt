@@ -4,6 +4,7 @@ import android.graphics.Rect
 import android.net.Uri
 import arrow.core.Either
 import com.ivy.data.model.Category
+import java.math.BigDecimal
 import java.time.Instant
 
 interface OcrEngine {
@@ -13,7 +14,7 @@ interface OcrEngine {
      * @param imageUri URI of the image file
      * @return Either error message or OCR result
      */
-    suspend fun recognizeText(imageUri: Uri): Either<String, OcrReceipt>
+    suspend fun recognizeText(imageUri: Uri): Either<String, OcrResult>
 
 
     /**
@@ -35,7 +36,7 @@ enum class OcrEngineType {
  *
  * Learning point: Structured data with confidence scores and timing.
  */
-@Deprecated("Use OcrReceipt instead")
+
 data class OcrResult(
     val fullText: String,           // Complete extracted text
     val blocks: List<TextBlock>,    // Structured blocks
@@ -46,7 +47,7 @@ data class OcrResult(
 }
 
 data class OcrReceipt(
-    val total: Double,
+    val total: BigDecimal,
     val currency: String,
     val date: Instant,
     val categories: List<Category>

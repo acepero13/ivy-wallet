@@ -7,6 +7,10 @@ import com.ivy.receipts.parser.ReceiptPatterns
  * Handles common French receipt formats with comma as decimal separator.
  */
 class FrenchReceiptPatterns : ReceiptPatterns {
+    override fun isTotalKeyword(text: String): Boolean {
+        TODO("Not yet implemented")
+    }
+
     override val netPattern = Regex("(?i).*\\b(net|montant net)\\b.*?(\\d+[,.]\\d+)")
 
     override val cashPaymentPattern = Regex("(?i).*\\b(espèces|especes|liquide)\\b.*")

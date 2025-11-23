@@ -5,6 +5,8 @@ import com.ivy.base.legacy.Transaction
 import com.ivy.base.model.TransactionType
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
+import java.math.BigDecimal
+import java.time.Instant
 import java.util.UUID
 
 data object MainScreen : Screen {
@@ -29,7 +31,10 @@ data class EditTransactionScreen(
     val type: TransactionType,
     // extras
     val accountId: UUID? = null,
-    val categoryId: UUID? = null
+    val categoryId: UUID? = null,
+    var ocrAmount: BigDecimal? = null,
+    val ocrDate: Instant? = null,
+    val ocrDescription: String? = null,
 ) : Screen {
     override val isLegacy: Boolean
         get() = true

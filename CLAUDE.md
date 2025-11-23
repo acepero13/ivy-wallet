@@ -452,3 +452,73 @@ docs/shared_accounts.md with setup steps, Firebase config, environment variables
 Review checklist
 
 Tests pass in CI (simulate with emulator). Docs are clear for reviewers to set up a test Firebase project.
+- i see this: 920  5513  5530 I System.out: === OCR BLOCKS (Spatial Parser) ===
+11-23 17:15:19.920  5513  5530 I System.out: Block 0: 'D51 Ungezieferfal le
+11-23 17:15:19.920  5513  5530 I System.out: aminWur&
+11-23 17:15:19.920  5513  5530 I System.out: 731551 Ungezieferfal | e
+11-23 17:15:19.920  5513  5533 D TransportRuntime.SQLiteEventStore: Storing event with priority=VERY_LOW, name=FIREBASE_ML_SDK for destination cct
+11-23 17:15:19.921  5513  5530 I System.out: 837620 Tyrol int 90g' | X:964-1860 Y:-72-281
+11-23 17:15:19.921  5513  5530 I System.out: Block 1: '823916 Batterien 20 Stk' | X:994-1868 Y:189-337
+11-23 17:15:19.921  5513  5530 I System.out: Block 2: '827650 Batteri en
+11-23 17:15:19.921  5513  5530 I System.out: 818035 Zucchini lose' | X:956-1753 Y:257-463
+11-23 17:15:19.921  5513  5530 I System.out: Block 3: '0,318 kg x 1,79 EUR/Kg
+11-23 17:15:19.921  5513  5530 I System.out: 42200 Suessr ahmbutt 2509' | X:1026-2023 Y:301-618
+11-23 17:15:19.921  5513  5530 I System.out: Block 4: '826500 Kiwi gold Stüuck
+11-23 17:15:19.921  5513  5530 I System.out: 826500 Kiwi gold Stück
+11-23 17:15:19.921  5513  5530 I System.out: 826500 Kiwi gold Stuck
+11-23 17:15:19.921  5513  5530 I System.out: 61897 Bio-Kart 1.5kø' | X:931-1866 Y:508-874
+11-23 17:15:19.921  5513  5530 I System.out: Block 5: 'Betrag' | X:747-999 Y:1281-1347
+11-23 17:15:19.921  5513  5530 I System.out: Block 6: 'K-U-N-D-E-N-B-E-L-E-G' | X:1141-2018 Y:860-1000
+11-23 17:15:19.921  5513  5530 I System.out: Block 7: '10.11.2025
+11-23 17:15:19.921  5513  5530 I System.out: TA-Nr. 115574
+11-23 17:15:19.921  5513  5530 I System.out: Kartennr.' | X:738-1303 Y:1442-1699
+11-23 17:15:19.921  5513  5530 I System.out: Block 8: 'Kontakt los Chip
+11-23 17:15:19.921  5513  5530 I System.out: VU-Nummer' | X:741-1390 Y:1706-1876
+11-23 17:15:19.921  5513  5530 I System.out: Block 9: 'Bezahl ung Mastercard' | X:1210-2024 Y:1101-1214
+11-23 17:15:19.921  5513  5530 I System.out: Block 10: 'EMV-Daten:' | X:743-1154 Y:2072-2149
+11-23 17:15:19.921  5513  5530 I System.out: Block 11: '09:43' | X:1444-1654 Y:1452-1518
+11-23 17:15:19.921  5513  5530 I System.out: Block 12: 'Autorisierungsantwortcode' | X:744-1804 Y:1974-2064
+11-23 17:15:19.921  5513  5530 I System.out: Block 13: '34 Artikei
+11-23 17:15:19.921  5513  5530 I System.out: MasterCard' | X:695-1189 Y:3006-3229
+11-23 17:15:19.921  5513  5530 I System.out: Block 14: 'AS-Proc-C0de = 00 075 00
+11-23 17:15:19.921  5513  5530 I System.out: Capt. -Ref = 0000
+11-23 17:15:19.921  5513  5530 I System.out: APPROVED' | X:727-1756 Y:2390-2714
+11-23 17:15:19.921  5513  5530 I System.out: Block 15: 'Zahlung erfolgt' | X:1236-1877 Y:2756-2878
+11-23 17:15:19.921  5513  5530 I System.out: Block 16: 'Autorisierungsnumterw2AC9 099763' | X:769-2456 Y:1847-2012
+11-23 17:15:19.921  5513  5530 I System.out: Block 17: 'A 07,0% Netto
+11-23 17:15:19.921  5513  5530 I System.out: B 19,O% Net to' | X:699-1279 Y:3205-3447
+11-23 17:15:19.921  5513  5530 I System.out: Block 18: '7.' | X:2091-2148 Y:169-228
+11-23 17:15:19.921  5513  5530 I System.out: Block 19: 'T-ID 65332840
+11-23 17:15:19.921  5513  5530 I System.out: Beleg-Nr. 9800
+11-23 17:15:19.921  5513  5530 I System.out: ############7766 01' | X:1632-2455 Y:1399-1734
+11-23 17:15:19.921  5513  5530 I System.out: Block 20: 'ViRHA EUR' | X:1212-1710 Y:3036-3180
+11-23 17:15:19.921  5513  5530 I System.out: Block 21: '0,5' | X:2089-2216 Y:213-312
+11-23 17:15:19.921  5513  5530 I System.out: Block 22: 'S19' | X:1938-2309 Y:651-847
+11-23 17:15:19.921  5513  5530 I System.out: Block 23: '37,44 MwSt
+11-23 17:15:19.921  5513  5530 I System.out: 9,65 MwSt' | X:1447-1877 Y:3200-3393
+11-23 17:15:19.921  5513  5530 I System.out: Block 24: '1' | X:2114-2149 Y:410-483
+11-23 17:15:19.921  5513  5530 I System.out: Block 25: '0000048001/0000//I/420300//0000000002202
+11-23 17:15:19.921  5513  5530 I System.out: 00000048001000001/AB97D975/80' | X:742-2450 Y:2136-2331
+11-23 17:15:19.921  5513  5530 I System.out: Block 26: '059' | X:2125-2258 Y:514-609
+11-23 17:15:19.921  5513  5530 I System.out: Block 27: '51,54 ER' | X:2067-2436 Y:1238-1351
+11-23 17:15:19.921  5513  5530 I System.out: Block 28: 'SunLo2151,54' | X:697-2389 Y:2944-3051
+11-23 17:15:19.921  5513  5530 I System.out: Block 29: 'Ur nsere OTTungs2ei ten:
+11-23 17:15:19.921  5513  5530 I System.out: Mo - Sa: 8:00 U9s' | X:936-2006 Y:3365-3592
+11-23 17:15:19.921  5513  5530 I System.out: Block 30: 'Onl ine
+11-23 17:15:19.921  5513  5530 I System.out: 4556601800' | X:2031-2451 Y:1685-1861
+11-23 17:15:19.921  5513  5530 I System.out: Block 31: 'EaA. 51,54' | X:1962-2358 Y:3106-3240
+11-23 17:15:19.921  5513  5530 I System.out: Block 32: '20:00 Uhr' | X:1746-2109 Y:3504-3570
+11-23 17:15:19.921  5513  5530 I System.out: Block 33: '*4169 08/01300 10. 11.25 09: d 83' | X:700-2303 Y:3339-3523
+11-23 17:15:19.921  5513  5530 I System.out: Block 34: '2.62' | X:2127-2307 Y:3290-3361
+11-23 17:15:19.921  5513  5530 I System.out: Block 35: '00' | X:2371-2456 Y:1971-2040
+11-23 17:15:19.921  5513  5530 I System.out: Block 36: 'UST-ID N . DE 120353452
+11-23 17:15:19.921  5513  5530 I System.out: VIELEN DANK FOR DEINEN EINKAUF
+11-23 17:15:19.922  5513  5530 I System.out: ALDI SUD Gutes fur alle.' | X:1024-2182 Y:3574-3929
+11-23 17:15:19.925  5513  5533 D TransportRuntime.JobInfoScheduler: Upload for context TransportContext(cct, VERY_LOW, MSRodHRwczovL2ZpcmViYXNlbG9nZ2luZy5nb29nbGVhcGlzLmNvbS92MGNjL2xvZy9iYXRjaD9mb3JtYXQ9anNvbl9wcm90bzNc) is already scheduled. Returning...
+11-23 17:15:19.950  5513  5533 D TransportRuntime.SQLiteEventStore: Storing event with priority=VERY_LOW, name=FIREBASE_ML_SDK for destination cct
+11-23 17:15:19.954  5513  5533 D TransportRuntime.JobInfoScheduler: Upload for context TransportContext(cct, VERY_LOW, MSRodHRwczovL2ZpcmViYXNlbG9nZ2luZy5nb29nbGVhcGlzLmNvbS92MGNjL2xvZy9iYXRjaD9mb3JtYXQ9anNvbl9wcm90bzNc) is already scheduled. Returning...
+11-23 17:15:19.968  5513  5530 I System.out: === SPATIAL PARSER RESULT ===
+11-23 17:15:19.969  5513  5530 I System.out: Total: 0.0
+11-23 17:15:19.969  5513  5530 I System.out: Currency: EUR
+11-23 17:15:20.048  5513  5530 E TestRunner: failed: testParseReceiptFromAssets_NewPic_SpatialParser(com.ivy.receipts.parser.ReceiptImageParsingTest)
+11-23 17:15:20.049  5513  5530 E TestRunner: ----- begin exception -----

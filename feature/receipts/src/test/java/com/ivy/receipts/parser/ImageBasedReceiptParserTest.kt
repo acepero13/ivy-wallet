@@ -3,12 +3,14 @@ package com.ivy.receipts.parser
 import android.graphics.Rect
 import com.ivy.receipts.ocr.TextBlock
 import com.ivy.receipts.ocr.TextLine
+import io.kotest.matchers.bigdecimal.shouldBeGreaterThan
 import io.kotest.matchers.doubles.shouldBeGreaterThan
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import org.junit.Before
 import org.junit.Test
 import java.io.File
+import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.ZoneId
 
@@ -67,7 +69,7 @@ class ImageBasedReceiptParserTest {
         val result = parser.parse(mlKitOcrOutput)
 
         // Verify parsed values
-        result.total shouldBe 11.25
+        result.total.toDouble() shouldBe 11.25
         result.currency shouldBe "EUR"
         result.date.toLocalDate() shouldBe LocalDate.of(2025, 11, 22)
     }
@@ -104,7 +106,7 @@ class ImageBasedReceiptParserTest {
 
         val result = parser.parse(mlKitOcrOutput)
 
-        result.total shouldBe 17.45
+        result.total.toDouble() shouldBe 17.45
         result.currency shouldBe "USD"
         result.date.toLocalDate() shouldBe LocalDate.of(2025, 11, 22)
     }
@@ -138,7 +140,7 @@ class ImageBasedReceiptParserTest {
         val result = parser.parse(mlKitOcrOutput)
 
         // Parser should still extract the total despite OCR errors
-        result.total shouldBe 4.48
+        result.total.toDouble() shouldBe 4.48
         result.currency shouldBe "EUR"
     }
 
@@ -177,8 +179,8 @@ class ImageBasedReceiptParserTest {
 
         val result = parser.parse(simulatedOCRFromImage)
 
-        result.total shouldBe 1.48
-        result.total shouldBeGreaterThan 0.0
+        result.total.toDouble() shouldBe 1.48
+        result.total shouldBeGreaterThan BigDecimal.ZERO
     }
 
     @Test
@@ -224,7 +226,7 @@ class ImageBasedReceiptParserTest {
 
         val result = parser.parse(mlKitOcrOutput)
 
-        result.total shouldBe 5.77
+        result.total.toDouble() shouldBe 5.77
         result.currency shouldBe "EUR"
         result.date.toLocalDate() shouldBe LocalDate.of(2025, 12, 1)
     }

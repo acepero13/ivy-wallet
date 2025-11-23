@@ -48,7 +48,7 @@ class ReceiptParserIntegrationTest {
         val result = parser.parse(ocrBlocks)
 
         // Assertions
-        result.total shouldBe 10.05
+        result.total.toDouble() shouldBe 10.05
         result.currency shouldBe "EUR"
         result.date.toLocalDate() shouldBe LocalDate.of(2025, 11, 22)
     }
@@ -84,7 +84,7 @@ class ReceiptParserIntegrationTest {
         val parser = RegexMlkitParser.withAutoDetection()
         val result = parser.parse(ocrBlocks)
 
-        result.total shouldBe 6.84
+        result.total.toDouble() shouldBe 6.84
         result.currency shouldBe "EUR"
         result.date.toLocalDate() shouldBe LocalDate.of(2025, 11, 22)
     }
@@ -121,7 +121,7 @@ class ReceiptParserIntegrationTest {
         val parser = RegexMlkitParser.withAutoDetection()
         val result = parser.parse(ocrBlocks)
 
-        result.total shouldBe 17.45
+        result.total.toDouble() shouldBe 17.45
         result.currency shouldBe "USD"
         result.date.toLocalDate() shouldBe LocalDate.of(2025, 11, 22)
     }
@@ -154,7 +154,7 @@ class ReceiptParserIntegrationTest {
         val parser = RegexMlkitParser.forLocale("en_US")
         val result = parser.parse(ocrBlocks)
 
-        result.total shouldBe 11.56
+        result.total.toDouble() shouldBe 11.56
         result.currency shouldBe "USD"
     }
 
@@ -180,7 +180,7 @@ class ReceiptParserIntegrationTest {
         val result = parser.parse(ocrBlocks)
 
         // Should still extract the total correctly despite OCR errors
-        result.total shouldBe 4.48
+        result.total.toDouble() shouldBe 4.48
         result.currency shouldBe "EUR"
     }
 
@@ -197,7 +197,7 @@ class ReceiptParserIntegrationTest {
         val parser = RegexMlkitParser.withAutoDetection()
         val result = parser.parse(ocrBlocks)
 
-        result.total shouldBe 5.99
+        result.total.toDouble() shouldBe 5.99
         result.date.toLocalDate() shouldBe LocalDate.of(2025, 11, 15)
     }
 
@@ -218,7 +218,7 @@ class ReceiptParserIntegrationTest {
         val result = parser.parse(ocrBlocks)
 
         // Should sum up all items
-        result.total shouldBe 7.50
+        result.total.toDouble() shouldBe 7.50
     }
 
     @Test
@@ -244,7 +244,7 @@ class ReceiptParserIntegrationTest {
         val parser = RegexMlkitParser.withAutoDetection()
         val result = parser.parse(ocrBlocks)
 
-        result.total shouldBe 28.48
+        result.total.toDouble() shouldBe 28.48
         result.currency shouldBe "EUR"
     }
 
@@ -265,7 +265,7 @@ class ReceiptParserIntegrationTest {
 
         // Should use the pattern's default currency (EUR for German)
         result.currency shouldBe "EUR"
-        result.total shouldBe 5.99
+        result.total.toDouble() shouldBe 5.99
     }
 
     // ========== Helper Methods ==========

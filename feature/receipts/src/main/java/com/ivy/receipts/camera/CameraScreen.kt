@@ -24,7 +24,6 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 
 @Composable
-@Preview(showBackground = true)
 fun CameraScreen(
     onImageCaptured: (Uri) -> Unit,
     onBack: () -> Unit
