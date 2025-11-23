@@ -1,5 +1,6 @@
 package com.ivy.navigation
 
+import androidx.compose.runtime.Immutable
 import com.ivy.base.legacy.Transaction
 import com.ivy.base.model.TransactionType
 import kotlinx.collections.immutable.ImmutableList
@@ -149,6 +150,9 @@ data object PollScreen : Screen
 data object AuthScreen : Screen
 
 data object SharedAccountsScreen : Screen
+
+@Immutable
+data object ReceiptCameraScreen: Screen
 
 data class SharedAccountDetailScreen(
     val sharedAccountId: UUID

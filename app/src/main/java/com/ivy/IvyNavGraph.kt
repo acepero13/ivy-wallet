@@ -59,6 +59,9 @@ import com.ivy.sharedaccounts.detail.SharedAccountDetailScreen
 import com.ivy.transaction.EditTransactionScreen
 import com.ivy.transactions.TransactionsScreen
 
+
+import com.ivy.receipts.ReceiptCameraScreen as ReceiptCameraScreenImpl
+
 @ExperimentalFoundationApi
 @ExperimentalAnimationApi
 @Composable
@@ -104,5 +107,8 @@ fun BoxWithConstraintsScope.IvyNavGraph(screen: Screen?) {
         }
         is com.ivy.navigation.SharedAccountsScreen -> SharedAccountsScreen(screen = screen)
         is com.ivy.navigation.SharedAccountDetailScreen -> SharedAccountDetailScreen(screen = screen)
+        is com.ivy.navigation.ReceiptCameraScreen -> ReceiptCameraScreenImpl(screen = screen)
     }
 }
+
+

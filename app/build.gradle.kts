@@ -145,6 +145,7 @@ dependencies {
     implementation(projects.feature.search)
     implementation(projects.feature.settings)
     implementation(projects.feature.sharedAccounts)
+    implementation(projects.feature.receipts)
     implementation(projects.feature.transactions)
     implementation(projects.feature.poll.impl)
     implementation(projects.shared.base)

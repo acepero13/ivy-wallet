@@ -82,6 +82,7 @@ fun BoxWithConstraintsScope.BottomBar(
     onAddExpense: () -> Unit,
     onAddTransfer: () -> Unit,
     onAddPlannedPayment: () -> Unit,
+    onScanReceipt: () -> Unit,
 
     showAddAccountModal: () -> Unit,
 ) {
@@ -174,7 +175,8 @@ fun BoxWithConstraintsScope.BottomBar(
         onAddIncome = onAddIncome,
         onAddExpense = onAddExpense,
         onAddTransfer = onAddTransfer,
-        onAddPlannedPayment = onAddPlannedPayment
+        onAddPlannedPayment = onAddPlannedPayment,
+        onScanReceipt =  onScanReceipt
     )
 
     var dragOffset by remember {
@@ -276,6 +278,7 @@ private fun TransactionButtons(
     onAddIncome: () -> Unit,
     onAddExpense: () -> Unit,
     onAddTransfer: () -> Unit,
+    onScanReceipt: () -> Unit,
     onAddPlannedPayment: () -> Unit,
 ) {
     val ivyContext = ivyWalletCtx()
@@ -300,7 +303,7 @@ private fun TransactionButtons(
                     layout(placealbe.width, placealbe.height) {
                         placealbe.place(
                             x = ivyContext.screenWidth / 2 - placealbe.width / 2,
-                            y = buttonCenterY.roundToInt() - 48.dp.roundToPx() - placealbe.height - FAB_BUTTON_SIZE.roundToPx()
+                            y = buttonCenterY.roundToInt() - 48.dp.roundToPx() - placealbe.height - FAB_BUTTON_SIZE.roundToPx() - 24.dp.roundToPx()
                         )
                     }
                 }
@@ -312,6 +315,29 @@ private fun TransactionButtons(
             solidBackground = true
         ) {
             onAddPlannedPayment()
+        }
+
+        // Scan Receipt button
+        IvyOutlinedButton(
+            modifier = Modifier
+                .layout { measurable, constraints ->
+                    val placeable = measurable.measure(constraints)
+                    layout(placeable.width, placeable.height) {
+                        placeable.place(
+                            x = ivyContext.screenWidth / 2 - placeable.width / 2,
+                            y = buttonCenterY.roundToInt() - placeable.height - FAB_BUTTON_SIZE.roundToPx() - 12.dp.roundToPx()
+                        )
+                    }
+                }
+                .padding(horizontal = 8.dp)
+                .alpha(buttonsShownPercent)
+                .zIndex(200f),
+            iconStart = R.drawable.ic_camera,
+            text = "Scan Receipt",
+            solidBackground = true
+        ) {
+            onScanReceipt()
+            android.util.Log.d("MainBottomBar", "Scan Receipt clicked")
         }
 
         // Add INCOME ------------------------------------------------------------------------------
@@ -350,6 +376,7 @@ private fun TransactionButtons(
         // Add TRANSFER ----------------------------------------------------------------------------
     }
 }
+
 
 @Composable
 private fun AddIncomeButton(

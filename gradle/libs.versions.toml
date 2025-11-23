@@ -23,7 +23,11 @@ jvm-target = "17"
 
 
 # Linters
-detekt = "1.23.6" # https://detekt.dev/docs/gettingstarted/gradle/
+detekt = "1.23.6"
+vision-common = "17.3.0"
+play-services-mlkit-text-recognition-common = "19.1.0"
+play-services-mlkit-text-recognition = "19.0.1"
+junit-ktx = "1.3.0" # https://detekt.dev/docs/gettingstarted/gradle/
 
 [libraries]
 android-gradle-plugin = { module = "com.android.tools.build:gradle", version = "8.5.2" }
@@ -147,6 +151,10 @@ ksp-plugin = { module = "com.google.devtools.ksp:com.google.devtools.ksp.gradle.
 
 # Modules Graph
 module-graph-plugin = { module = "com.jraska.module.graph.assertion:plugin", version = "2.6.0" }
+vision-common = { group = "com.google.mlkit", name = "vision-common", version.ref = "vision-common" }
+play-services-mlkit-text-recognition-common = { group = "com.google.android.gms", name = "play-services-mlkit-text-recognition-common", version.ref = "play-services-mlkit-text-recognition-common" }
+play-services-mlkit-text-recognition = { group = "com.google.android.gms", name = "play-services-mlkit-text-recognition", version.ref = "play-services-mlkit-text-recognition" }
+androidx-junit-ktx = { group = "androidx.test.ext", name = "junit-ktx", version.ref = "junit-ktx" }
 
 
 [bundles]
