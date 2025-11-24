@@ -155,10 +155,18 @@ class EditTransactionViewModel @Inject constructor(
     private var sharedAccounts by mutableStateOf<ImmutableList<com.ivy.data.model.SharedAccount>>(persistentListOf())
     private var selectedSharedAccount by mutableStateOf<com.ivy.data.model.SharedAccount?>(null)
 
+    // Track if this transaction was created from receipt scanning
+    private var isFromReceiptScan = false
+
     fun start(screen: EditTransactionScreen) {
         viewModelScope.launch {
             editMode = screen.initialTransactionId != null
             baseUserCurrency = baseCurrency()
+
+            // Detect if this is from receipt scanning (has OCR data)
+            isFromReceiptScan = screen.ocrAmount != null ||
+                                screen.ocrDate != null ||
+                                screen.ocrTitle != null
 
             val tagList = async { getAllTags() }
 
@@ -960,7 +968,11 @@ class EditTransactionViewModel @Inject constructor(
     private suspend fun baseCurrency(): String = ioThread { settingsDao.findFirst().currency }
 
     private fun closeScreen() {
-        if (nav.backStackEmpty()) {
+        // If coming from receipt scan, go to MainScreen instead of back to camera
+        if (isFromReceiptScan) {
+            nav.resetBackStack()
+            nav.navigateTo(MainScreen)
+        } else if (nav.backStackEmpty()) {
             nav.resetBackStack()
             nav.navigateTo(MainScreen)
         } else {

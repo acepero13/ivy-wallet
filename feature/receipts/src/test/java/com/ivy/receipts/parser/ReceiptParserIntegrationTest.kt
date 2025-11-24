@@ -3,7 +3,6 @@ package com.ivy.receipts.parser
 import android.graphics.Rect
 import com.ivy.receipts.ocr.TextBlock
 import com.ivy.receipts.ocr.TextLine
-import io.kotest.matchers.doubles.shouldBeGreaterThan
 import io.kotest.matchers.shouldBe
 import org.junit.Test
 import java.time.LocalDate
