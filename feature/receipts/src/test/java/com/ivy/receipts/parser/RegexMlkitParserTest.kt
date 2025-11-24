@@ -8,6 +8,7 @@ import com.ivy.receipts.parser.locales.GermanReceiptPatterns
 import io.kotest.matchers.doubles.shouldBeGreaterThan
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
+import kotlinx.coroutines.runBlocking
 import org.junit.Before
 import org.junit.Test
 import java.time.Instant
@@ -30,9 +31,10 @@ class RegexMlkitParserTest {
     // ========== German Receipt Tests ==========
 
     @Test
-    fun `parse German receipt - with total and items`() {
-        // given
-        val receiptText = """
+    fun `parse German receipt - with total and items`()  {
+        runBlocking {
+            // given
+            val receiptText = """
             REWE Markt GmbH
             Musterstraße 123
             12345 Berlin
@@ -48,21 +50,23 @@ class RegexMlkitParserTest {
             Vielen Dank für Ihren Einkauf
         """.trimIndent()
 
-        val blocks = createTextBlocks(receiptText)
+            val blocks = createTextBlocks(receiptText)
 
-        // when
-        val result = germanParser.parse(blocks)
+            // when
+            val result = germanParser.parse(blocks)
 
-        // then
-        result.total.toDouble() shouldBe 8.47
-        result.currency shouldBe "EUR"
-        result.date.toLocalDate() shouldBe LocalDate.of(2024, 3, 15)
+            // then
+            result.total.toDouble() shouldBe 8.47
+            result.currency shouldBe "EUR"
+            result.date.toLocalDate() shouldBe LocalDate.of(2024, 3, 15)
+        }
     }
 
     @Test
-    fun `parse German receipt - with brutto total`() {
-        // given
-        val receiptText = """
+    fun `parse German receipt - with brutto total`()  {
+        runBlocking {
+            // given
+            val receiptText = """
             Supermarkt XYZ
 
             Datum: 20.12.2023
@@ -73,20 +77,22 @@ class RegexMlkitParserTest {
             Brutto                   15,50
         """.trimIndent()
 
-        val blocks = createTextBlocks(receiptText)
+            val blocks = createTextBlocks(receiptText)
 
-        // when
-        val result = germanParser.parse(blocks)
+            // when
+            val result = germanParser.parse(blocks)
 
-        // then
-        result.total.toDouble() shouldBe 15.50
-        result.currency shouldBe "EUR"
+            // then
+            result.total.toDouble() shouldBe 15.50
+            result.currency shouldBe "EUR"
+        }
     }
 
     @Test
-    fun `parse German receipt - calculates total from items when no total line`() {
-        // given
-        val receiptText = """
+    fun `parse German receipt - calculates total from items when no total line`()  {
+        runBlocking {
+            // given
+            val receiptText = """
             Shop ABC
 
             Item 1                   3,50
@@ -94,21 +100,23 @@ class RegexMlkitParserTest {
             Item 3                   4,75
         """.trimIndent()
 
-        val blocks = createTextBlocks(receiptText)
+            val blocks = createTextBlocks(receiptText)
 
-        // when
-        val result = germanParser.parse(blocks)
+            // when
+            val result = germanParser.parse(blocks)
 
-        // then
-        result.total.toDouble() shouldBe 10.50
+            // then
+            result.total.toDouble() shouldBe 10.50
+        }
     }
 
     // ========== English Receipt Tests ==========
 
     @Test
-    fun `parse English receipt - with total and date`() {
-        // given
-        val receiptText = """
+    fun `parse English receipt - with total and date`()  {
+        runBlocking {
+            // given
+            val receiptText = """
             Walmart Supercenter
             123 Main Street
             New York, NY 10001
@@ -124,21 +132,23 @@ class RegexMlkitParserTest {
             Thank you for shopping!
         """.trimIndent()
 
-        val blocks = createTextBlocks(receiptText)
+            val blocks = createTextBlocks(receiptText)
 
-        // when
-        val result = englishParser.parse(blocks)
+            // when
+            val result = englishParser.parse(blocks)
 
-        // then
-        result.total.toDouble() shouldBe 9.47
-        result.currency shouldBe "USD"
-        result.date.toLocalDate() shouldBe LocalDate.of(2024, 3, 15)
+            // then
+            result.total.toDouble() shouldBe 9.47
+            result.currency shouldBe "USD"
+            result.date.toLocalDate() shouldBe LocalDate.of(2024, 3, 15)
+        }
     }
 
     @Test
-    fun `parse English receipt - with amount due`() {
-        // given
-        val receiptText = """
+    fun `parse English receipt - with amount due`()  {
+        runBlocking {
+            // given
+            val receiptText = """
             Target Store
 
             Date: 12/25/2023
@@ -149,20 +159,22 @@ class RegexMlkitParserTest {
             Amount Due               $40.50
         """.trimIndent()
 
-        val blocks = createTextBlocks(receiptText)
+            val blocks = createTextBlocks(receiptText)
 
-        // when
-        val result = englishParser.parse(blocks)
+            // when
+            val result = englishParser.parse(blocks)
 
-        // then
-        result.total.toDouble() shouldBe 40.50
-        result.currency shouldBe "USD"
+            // then
+            result.total.toDouble() shouldBe 40.50
+            result.currency shouldBe "USD"
+        }
     }
 
     @Test
-    fun `parse English receipt - with gross total`() {
-        // given
-        val receiptText = """
+    fun `parse English receipt - with gross total`()  {
+        runBlocking {
+            // given
+            val receiptText = """
             Grocery Store
 
             Item 1                   $10.00
@@ -171,21 +183,23 @@ class RegexMlkitParserTest {
             Gross                    $30.00
         """.trimIndent()
 
-        val blocks = createTextBlocks(receiptText)
+            val blocks = createTextBlocks(receiptText)
 
-        // when
-        val result = englishParser.parse(blocks)
+            // when
+            val result = englishParser.parse(blocks)
 
-        // then
-        result.total.toDouble() shouldBe 30.00
+            // then
+            result.total.toDouble() shouldBe 30.00
+        }
     }
 
     // ========== Auto-Detection Tests ==========
 
     @Test
-    fun `auto-detect German receipt`() {
-        // given
-        val germanReceipt = """
+    fun `auto-detect German receipt`()  {
+        runBlocking {
+            // given
+            val germanReceipt = """
             EDEKA Markt
 
             Datum: 10.01.2024
@@ -198,20 +212,22 @@ class RegexMlkitParserTest {
             Vielen Dank
         """.trimIndent()
 
-        val blocks = createTextBlocks(germanReceipt)
+            val blocks = createTextBlocks(germanReceipt)
 
-        // when
-        val result = autoParser.parse(blocks)
+            // when
+            val result = autoParser.parse(blocks)
 
-        // then
-        result.total.toDouble() shouldBe 4.30
-        result.currency shouldBe "EUR"
+            // then
+            result.total.toDouble() shouldBe 4.30
+            result.currency shouldBe "EUR"
+        }
     }
 
     @Test
-    fun `auto-detect English receipt`() {
-        // given
-        val englishReceipt = """
+    fun `auto-detect English receipt`()  {
+        runBlocking {
+            // given
+            val englishReceipt = """
             Costco Wholesale
 
             Date: 01/10/2024
@@ -224,34 +240,38 @@ class RegexMlkitParserTest {
             Thank you
         """.trimIndent()
 
-        val blocks = createTextBlocks(englishReceipt)
+            val blocks = createTextBlocks(englishReceipt)
 
-        // when
-        val result = autoParser.parse(blocks)
+            // when
+            val result = autoParser.parse(blocks)
 
-        // then
-        result.total.toDouble() shouldBe 4.30
-        result.currency shouldBe "USD"
+            // then
+            result.total.toDouble() shouldBe 4.30
+            result.currency shouldBe "USD"
+        }
     }
 
     // ========== Edge Cases ==========
 
     @Test
-    fun `parse receipt - empty blocks returns zero total`() {
-        // given
-        val blocks = emptyList<TextBlock>()
+    fun `parse receipt - empty blocks returns zero total`()  {
+        runBlocking {
+            // given
+            val blocks = emptyList<TextBlock>()
 
-        // when
-        val result = germanParser.parse(blocks)
+            // when
+            val result = germanParser.parse(blocks)
 
-        // then
-        result.total.toDouble() shouldBe 0.0
+            // then
+            result.total.toDouble() shouldBe 0.0
+        }
     }
 
     @Test
-    fun `parse receipt - no total line sums items`() {
-        // given
-        val receiptText = """
+    fun `parse receipt - no total line sums items`()  {
+        runBlocking {
+            // given
+            val receiptText = """
             Simple Receipt
 
             Item A                   5,00
@@ -259,19 +279,21 @@ class RegexMlkitParserTest {
             Item C                   1,50
         """.trimIndent()
 
-        val blocks = createTextBlocks(receiptText)
+            val blocks = createTextBlocks(receiptText)
 
-        // when
-        val result = germanParser.parse(blocks)
+            // when
+            val result = germanParser.parse(blocks)
 
-        // then
-        result.total.toDouble() shouldBe 10.00
+            // then
+            result.total.toDouble() shouldBe 10.00
+        }
     }
 
     @Test
-    fun `parse receipt - defaults to current date when no date found`() {
-        // given
-        val receiptText = """
+    fun `parse receipt - defaults to current date when no date found`()  {
+        runBlocking {
+            // given
+            val receiptText = """
             No Date Receipt
 
             Item                     5,00
@@ -279,22 +301,24 @@ class RegexMlkitParserTest {
             Summe                    5,00
         """.trimIndent()
 
-        val blocks = createTextBlocks(receiptText)
-        val beforeParse = Instant.now()
+            val blocks = createTextBlocks(receiptText)
+            val beforeParse = Instant.now()
 
-        // when
-        val result = germanParser.parse(blocks)
+            // when
+            val result = germanParser.parse(blocks)
 
-        // then
-        val afterParse = Instant.now()
-        result.date.isAfter(beforeParse.minusSeconds(1)) shouldBe true
-        result.date.isBefore(afterParse.plusSeconds(1)) shouldBe true
+            // then
+            val afterParse = Instant.now()
+            result.date.isAfter(beforeParse.minusSeconds(1)) shouldBe true
+            result.date.isBefore(afterParse.plusSeconds(1)) shouldBe true
+        }
     }
 
     @Test
-    fun `parse receipt - skips net and cash payment lines`() {
-        // given
-        val receiptText = """
+    fun `parse receipt - skips net and cash payment lines`()  {
+        runBlocking {
+            // given
+            val receiptText = """
             Receipt with extras
 
             Item                     10,00
@@ -304,19 +328,21 @@ class RegexMlkitParserTest {
             Summe                    10,00
         """.trimIndent()
 
-        val blocks = createTextBlocks(receiptText)
+            val blocks = createTextBlocks(receiptText)
 
-        // when
-        val result = germanParser.parse(blocks)
+            // when
+            val result = germanParser.parse(blocks)
 
-        // then
-        result.total.toDouble() shouldBe 10.00
+            // then
+            result.total.toDouble() shouldBe 10.00
+        }
     }
 
     @Test
-    fun `parse receipt - handles comma decimal separator correctly`() {
-        // given
-        val receiptText = """
+    fun `parse receipt - handles comma decimal separator correctly`()  {
+        runBlocking {
+            // given
+            val receiptText = """
             German Receipt
 
             Item 1                   12,99
@@ -325,19 +351,21 @@ class RegexMlkitParserTest {
             Summe                    20,49
         """.trimIndent()
 
-        val blocks = createTextBlocks(receiptText)
+            val blocks = createTextBlocks(receiptText)
 
-        // when
-        val result = germanParser.parse(blocks)
+            // when
+            val result = germanParser.parse(blocks)
 
-        // then
-        result.total.toDouble() shouldBe 20.49
+            // then
+            result.total.toDouble() shouldBe 20.49
+        }
     }
 
     @Test
-    fun `parse receipt - handles period decimal separator correctly`() {
-        // given
-        val receiptText = """
+    fun `parse receipt - handles period decimal separator correctly`()  {
+        runBlocking {
+            // given
+            val receiptText = """
             US Receipt
 
             Item 1                   $12.99
@@ -346,112 +374,126 @@ class RegexMlkitParserTest {
             Total                    $20.49
         """.trimIndent()
 
-        val blocks = createTextBlocks(receiptText)
+            val blocks = createTextBlocks(receiptText)
 
-        // when
-        val result = englishParser.parse(blocks)
+            // when
+            val result = englishParser.parse(blocks)
 
-        // then
-        result.total.toDouble() shouldBe 20.49
+            // then
+            result.total.toDouble() shouldBe 20.49
+        }
     }
 
     // ========== Multiple Date Format Tests ==========
 
     @Test
-    fun `parse German receipt - date with dots`() {
-        // given
-        val receiptText = """
+    fun `parse German receipt - date with dots`()  {
+        runBlocking {
+            // given
+            val receiptText = """
             Receipt
             15.03.2024
             Summe                    5,00
         """.trimIndent()
 
-        val blocks = createTextBlocks(receiptText)
+            val blocks = createTextBlocks(receiptText)
 
-        // when
-        val result = germanParser.parse(blocks)
+            // when
+            val result = germanParser.parse(blocks)
 
-        // then
-        result.date.toLocalDate() shouldBe LocalDate.of(2024, 3, 15)
+            // then
+            result.date.toLocalDate() shouldBe LocalDate.of(2024, 3, 15)
+        }
     }
 
     @Test
-    fun `parse German receipt - date with slashes`() {
-        // given
-        val receiptText = """
+    fun `parse German receipt - date with slashes`()  {
+        runBlocking {
+            // given
+            val receiptText = """
             Receipt
             15/03/2024
             Summe                    5,00
         """.trimIndent()
 
-        val blocks = createTextBlocks(receiptText)
+            val blocks = createTextBlocks(receiptText)
 
-        // when
-        val result = germanParser.parse(blocks)
+            // when
+            val result = germanParser.parse(blocks)
 
-        // then
-        result.date.toLocalDate() shouldBe LocalDate.of(2024, 3, 15)
+            // then
+            result.date.toLocalDate() shouldBe LocalDate.of(2024, 3, 15)
+        }
     }
 
     @Test
-    fun `parse English receipt - MM-DD-YYYY format`() {
-        // given
-        val receiptText = """
+    fun `parse English receipt - MM-DD-YYYY format`()  {
+        runBlocking {
+            // given
+            val receiptText = """
             Receipt
             03/15/2024
             Total                    $5.00
         """.trimIndent()
 
-        val blocks = createTextBlocks(receiptText)
+            val blocks = createTextBlocks(receiptText)
 
-        // when
-        val result = englishParser.parse(blocks)
+            // when
+            val result = englishParser.parse(blocks)
 
-        // then
-        result.date.toLocalDate() shouldBe LocalDate.of(2024, 3, 15)
+            // then
+            result.date.toLocalDate() shouldBe LocalDate.of(2024, 3, 15)
+        }
     }
 
     // ========== Factory Method Tests ==========
 
     @Test
-    fun `forLocale - creates German parser`() {
-        // when
-        val parser = RegexMlkitParser.forLocale("de_DE")
-        val receiptText = "Summe 10,50"
-        val result = parser.parse(createTextBlocks(receiptText))
+    fun `forLocale - creates German parser`()  {
+        runBlocking {
+            // when
+            val parser = RegexMlkitParser.forLocale("de_DE")
+            val receiptText = "Summe 10,50"
+            val result = parser.parse(createTextBlocks(receiptText))
 
-        // then
-        result.currency shouldBe "EUR"
+            // then
+            result.currency shouldBe "EUR"
+        }
     }
 
     @Test
-    fun `forLocale - creates English parser`() {
-        // when
-        val parser = RegexMlkitParser.forLocale("en_US")
-        val receiptText = "Total 10.50"
-        val result = parser.parse(createTextBlocks(receiptText))
+    fun `forLocale - creates English parser`()  {
+        runBlocking {
+            // when
+            val parser = RegexMlkitParser.forLocale("en_US")
+            val receiptText = "Total 10.50"
+            val result = parser.parse(createTextBlocks(receiptText))
 
-        // then
-        result.currency shouldBe "USD"
+            // then
+            result.currency shouldBe "USD"
+        }
     }
 
     @Test
-    fun `forLocale - defaults to German for unknown locale`() {
-        // when
-        val parser = RegexMlkitParser.forLocale("unknown")
-        val receiptText = "Summe 10,50"
-        val result = parser.parse(createTextBlocks(receiptText))
+    fun `forLocale - defaults to German for unknown locale`()  {
+        runBlocking {
+            // when
+            val parser = RegexMlkitParser.forLocale("unknown")
+            val receiptText = "Summe 10,50"
+            val result = parser.parse(createTextBlocks(receiptText))
 
-        // then
-        result.currency shouldBe "EUR"
+            // then
+            result.currency shouldBe "EUR"
+        }
     }
 
     // ========== Real-world Receipt Tests ==========
 
     @Test
-    fun `parse complex German receipt`() {
-        // given
-        val receiptText = """
+    fun `parse complex German receipt`()  {
+        runBlocking {
+            // given
+            val receiptText = """
             ALDI SÜD
             Filiale 4711
             Hauptstr. 1
@@ -476,21 +518,23 @@ class RegexMlkitParserTest {
             Vielen Dank für Ihren Einkauf!
         """.trimIndent()
 
-        val blocks = createTextBlocks(receiptText)
+            val blocks = createTextBlocks(receiptText)
 
-        // when
-        val result = germanParser.parse(blocks)
+            // when
+            val result = germanParser.parse(blocks)
 
-        // then
-        result.total.toDouble() shouldBe 10.05
-        result.currency shouldBe "EUR"
-        result.date.toLocalDate() shouldBe LocalDate.of(2025, 11, 22)
+            // then
+            result.total.toDouble() shouldBe 10.05
+            result.currency shouldBe "EUR"
+            result.date.toLocalDate() shouldBe LocalDate.of(2025, 11, 22)
+        }
     }
 
     @Test
-    fun `parse complex English receipt`() {
-        // given
-        val receiptText = """
+    fun `parse complex English receipt`()  {
+        runBlocking {
+            // given
+            val receiptText = """
             WHOLE FOODS MARKET
             Store #10250
             555 Market St
@@ -515,22 +559,24 @@ class RegexMlkitParserTest {
             Thank you for shopping!
         """.trimIndent()
 
-        val blocks = createTextBlocks(receiptText)
+            val blocks = createTextBlocks(receiptText)
 
-        // when
-        val result = englishParser.parse(blocks)
+            // when
+            val result = englishParser.parse(blocks)
 
-        // then
-        result.total.toDouble() shouldBe 33.03
-        result.currency shouldBe "USD"
-        result.date.toLocalDate() shouldBe LocalDate.of(2025, 11, 22)
+            // then
+            result.total.toDouble() shouldBe 33.03
+            result.currency shouldBe "USD"
+            result.date.toLocalDate() shouldBe LocalDate.of(2025, 11, 22)
+        }
     }
 
     @Test
-    fun `parse German receipt - total keyword and amount on separate lines`() {
-        // given - simulates OCR output where text is extracted line-by-line without spatial layout
-        // This happens when ML Kit extracts "SUMME EUR" on one line and "27,66" many lines later
-        val receiptText = """
+    fun `parse German receipt - total keyword and amount on separate lines`()  {
+        runBlocking {
+            // given - simulates OCR output where text is extracted line-by-line without spatial layout
+            // This happens when ML Kit extracts "SUMME EUR" on one line and "27,66" many lines later
+            val receiptText = """
             REWE Markt GmbH
             Musterstraße 123
             12345 Berlin
@@ -556,20 +602,22 @@ class RegexMlkitParserTest {
             Vielen Dank für Ihren Einkauf
         """.trimIndent()
 
-        val blocks = createTextBlocks(receiptText)
+            val blocks = createTextBlocks(receiptText)
 
-        // when
-        val result = germanParser.parse(blocks)
+            // when
+            val result = germanParser.parse(blocks)
 
-        // then - should find the total amount even though it's far from the keyword
-        result.total.toDouble() shouldBe 27.66
-        result.currency shouldBe "EUR"
+            // then - should find the total amount even though it's far from the keyword
+            result.total.toDouble() shouldBe 27.66
+            result.currency shouldBe "EUR"
+        }
     }
 
     @Test
-    fun `parse English receipt - total keyword and amount on separate lines`() {
-        // given
-        val receiptText = """
+    fun `parse English receipt - total keyword and amount on separate lines`()  {
+        runBlocking {
+            // given
+            val receiptText = """
             Walmart Supercenter
             123 Main Street
             New York, NY 10001
@@ -591,14 +639,15 @@ class RegexMlkitParserTest {
             Thank you!
         """.trimIndent()
 
-        val blocks = createTextBlocks(receiptText)
+            val blocks = createTextBlocks(receiptText)
 
-        // when
-        val result = englishParser.parse(blocks)
+            // when
+            val result = englishParser.parse(blocks)
 
-        // then
-        result.total.toDouble() shouldBe 15.99
-        result.currency shouldBe "USD"
+            // then
+            result.total.toDouble() shouldBe 15.99
+            result.currency shouldBe "USD"
+        }
     }
 
     // ========== Helper Methods ==========

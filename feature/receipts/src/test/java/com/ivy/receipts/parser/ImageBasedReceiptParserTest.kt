@@ -35,11 +35,12 @@ class ImageBasedReceiptParserTest {
     }
 
     @Test
-    fun `parse receipt from simulated ML Kit OCR output - German REWE receipt`() = runBlocking {
-        // This simulates the exact OCR output you would get from ML Kit
-        // when scanning a real REWE receipt image
-        val mlKitOcrOutput = simulateMLKitOCR(
-            """
+    fun `parse receipt from simulated ML Kit OCR output - German REWE receipt`()  {
+        runBlocking {
+            // This simulates the exact OCR output you would get from ML Kit
+            // when scanning a real REWE receipt image
+            val mlKitOcrOutput = simulateMLKitOCR(
+                """
             REWE
             Ihr Kaufpark
             Hauptstraße 123
@@ -64,21 +65,23 @@ class ImageBasedReceiptParserTest {
             Vielen Dank für Ihren Einkauf!
             www.rewe.de
             """.trimIndent()
-        )
+            )
 
-        // Parse the OCR output
-        val result = parser.parse(mlKitOcrOutput)
+            // Parse the OCR output
+            val result = parser.parse(mlKitOcrOutput)
 
-        // Verify parsed values
-        result.total.toDouble() shouldBe 11.25
-        result.currency shouldBe "EUR"
-        result.date.toLocalDate() shouldBe LocalDate.of(2025, 11, 22)
+            // Verify parsed values
+            result.total.toDouble() shouldBe 11.25
+            result.currency shouldBe "EUR"
+            result.date.toLocalDate() shouldBe LocalDate.of(2025, 11, 22)
+        }
     }
 
     @Test
-    fun `parse receipt from simulated ML Kit OCR output - US Walmart receipt`() = runBlocking {
-        val mlKitOcrOutput = simulateMLKitOCR(
-            """
+    fun `parse receipt from simulated ML Kit OCR output - US Walmart receipt`()  {
+        runBlocking {
+            val mlKitOcrOutput = simulateMLKitOCR(
+                """
             WALMART SUPERCENTER
             Store #5432
             123 Main Street
@@ -103,20 +106,22 @@ class ImageBasedReceiptParserTest {
             Thank you for shopping at Walmart!
             Save money. Live better.
             """.trimIndent()
-        )
+            )
 
-        val result = parser.parse(mlKitOcrOutput)
+            val result = parser.parse(mlKitOcrOutput)
 
-        result.total.toDouble() shouldBe 17.45
-        result.currency shouldBe "USD"
-        result.date.toLocalDate() shouldBe LocalDate.of(2025, 11, 22)
+            result.total.toDouble() shouldBe 17.45
+            result.currency shouldBe "USD"
+            result.date.toLocalDate() shouldBe LocalDate.of(2025, 11, 22)
+        }
     }
 
     @Test
-    fun `parse receipt with OCR recognition errors - simulates real-world imperfect OCR`() = runBlocking {
-        // Real OCR often makes mistakes - this simulates common errors
-        val mlKitOcrOutput = simulateMLKitOCR(
-            """
+    fun `parse receipt with OCR recognition errors - simulates real-world imperfect OCR`()  {
+        runBlocking {
+            // Real OCR often makes mistakes - this simulates common errors
+            val mlKitOcrOutput = simulateMLKitOCR(
+                """
             REW E
             Hauptstr. 1
 
@@ -130,23 +135,24 @@ class ImageBasedReceiptParserTest {
             |||||||||||||||||||
             Vielen Dank!
             """.trimIndent(),
-            confidenceScores = mapOf(
-                0 to 0.92f,  // "REW E" - lower confidence due to space
-                3 to 0.85f,  // Date with OCR error
-                5 to 0.88f,  // "Mi1ch" - OCR confused l with 1
-                6 to 0.87f   // "Br0t" - OCR confused o with 0
+                confidenceScores = mapOf(
+                    0 to 0.92f,  // "REW E" - lower confidence due to space
+                    3 to 0.85f,  // Date with OCR error
+                    5 to 0.88f,  // "Mi1ch" - OCR confused l with 1
+                    6 to 0.87f   // "Br0t" - OCR confused o with 0
+                )
             )
-        )
 
-        val result = parser.parse(mlKitOcrOutput)
+            val result = parser.parse(mlKitOcrOutput)
 
-        // Parser should still extract the total despite OCR errors
-        result.total.toDouble() shouldBe 4.48
-        result.currency shouldBe "EUR"
+            // Parser should still extract the total despite OCR errors
+            result.total.toDouble() shouldBe 4.48
+            result.currency shouldBe "EUR"
+        }
     }
 
     @Test
-    fun `parse receipt from image file path - demonstrates file loading pattern`() = runBlocking {
+    fun `parse receipt from image file path - demonstrates file loading pattern`()  {
         // This demonstrates the pattern for loading images from files
         // In a real test, you would:
         // 1. Load the image file from resources
@@ -167,47 +173,51 @@ class ImageBasedReceiptParserTest {
         val result = parser.parse(ocrBlocks)
         */
 
-        // For this unit test, we simulate the result
-        val simulatedOCRFromImage = simulateMLKitOCR(
-            """
+        runBlocking {
+            // For this unit test, we simulate the result
+            val simulatedOCRFromImage = simulateMLKitOCR(
+                """
             ALDI SÜD
             22.11.2025
             Milch                          0,99
             Brot                           0,49
             Summe                          1,48
             """.trimIndent()
-        )
+            )
 
-        val result = parser.parse(simulatedOCRFromImage)
+            val result = parser.parse(simulatedOCRFromImage)
 
-        result.total.toDouble() shouldBe 1.48
-        result.total shouldBeGreaterThan BigDecimal.ZERO
+            result.total.toDouble() shouldBe 1.48
+            result.total shouldBeGreaterThan BigDecimal.ZERO
+        }
     }
 
     @Test
-    fun `demonstrate how to handle image resource loading`() = runBlocking {
+    fun `demonstrate how to handle image resource loading`()  {
         // This test shows the pattern you would use to load actual image resources
+        runBlocking {
+            val resourcePath = "images/german_receipt_rewe.jpg"
 
-        val resourcePath = "images/german_receipt_rewe.jpg"
+            // In a real test with resources, you would:
+            // val imageStream = javaClass.classLoader.getResourceAsStream(resourcePath)
 
-        // In a real test with resources, you would:
-        // val imageStream = javaClass.classLoader.getResourceAsStream(resourcePath)
+            // For now, we check if the file would exist
+            val resourceExists = checkIfResourceWouldExist(resourcePath)
 
-        // For now, we check if the file would exist
-        val resourceExists = checkIfResourceWouldExist(resourcePath)
+            // We can still run the test with simulated data
+            val ocrOutput = simulateMLKitOCR("SUMME 10,00")
+            val result = parser.parse(ocrOutput)
 
-        // We can still run the test with simulated data
-        val ocrOutput = simulateMLKitOCR("SUMME 10,00")
-        val result = parser.parse(ocrOutput)
-
-        result shouldNotBe null
-        // In a real image test, you would assert specific values
+            result shouldNotBe null
+            // In a real image test, you would assert specific values
+        }
     }
 
     @Test
-    fun `parse high-quality OCR output with perfect confidence`() = runBlocking {
-        val mlKitOcrOutput = simulateMLKitOCR(
-            """
+    fun `parse high-quality OCR output with perfect confidence`()  {
+        runBlocking {
+            val mlKitOcrOutput = simulateMLKitOCR(
+                """
             EDEKA
             01.12.2025
             Butter                         1,99
@@ -215,43 +225,46 @@ class ImageBasedReceiptParserTest {
             Eier                           2,49
             SUMME                          5,77
             """.trimIndent(),
-            confidenceScores = mapOf(
-                0 to 0.99f,
-                1 to 0.98f,
-                2 to 0.99f,
-                3 to 0.98f,
-                4 to 0.99f,
-                5 to 0.99f
+                confidenceScores = mapOf(
+                    0 to 0.99f,
+                    1 to 0.98f,
+                    2 to 0.99f,
+                    3 to 0.98f,
+                    4 to 0.99f,
+                    5 to 0.99f
+                )
             )
-        )
 
-        val result = parser.parse(mlKitOcrOutput)
+            val result = parser.parse(mlKitOcrOutput)
 
-        result.total.toDouble() shouldBe 5.77
-        result.currency shouldBe "EUR"
-        result.date.toLocalDate() shouldBe LocalDate.of(2025, 12, 1)
+            result.total.toDouble() shouldBe 5.77
+            result.currency shouldBe "EUR"
+            result.date.toLocalDate() shouldBe LocalDate.of(2025, 12, 1)
+        }
     }
 
     @Test
-    fun `parse low-quality OCR output with poor confidence`() = runBlocking {
-        // Simulates OCR from a blurry or poorly lit image
-        val mlKitOcrOutput = simulateMLKitOCR(
-            """
+    fun `parse low-quality OCR output with poor confidence`()  {
+        runBlocking {
+            // Simulates OCR from a blurry or poorly lit image
+            val mlKitOcrOutput = simulateMLKitOCR(
+                """
             REWE
             Milk                           2 49
             Total                         2 49
             """.trimIndent(),
-            confidenceScores = mapOf(
-                0 to 0.65f,
-                1 to 0.62f,
-                2 to 0.68f
+                confidenceScores = mapOf(
+                    0 to 0.65f,
+                    1 to 0.62f,
+                    2 to 0.68f
+                )
             )
-        )
 
-        val result = parser.parse(mlKitOcrOutput)
+            val result = parser.parse(mlKitOcrOutput)
 
-        // Parser should still attempt to extract data
-        result shouldNotBe null
+            // Parser should still attempt to extract data
+            result shouldNotBe null
+        }
     }
 
     // ========== Helper Methods ==========

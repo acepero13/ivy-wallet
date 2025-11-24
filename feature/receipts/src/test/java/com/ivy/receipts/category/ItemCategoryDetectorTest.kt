@@ -15,100 +15,126 @@ class ItemCategoryDetectorTest {
     private val detector = ItemCategoryDetector(GermanItemPatterns())
 
     @Test
-    fun `should detect food items as groceries`() = runBlocking {
-        val blocks = listOf(
-            createTextBlock("Store Header", top = 0),
-            createTextBlock("MILCH 1,5%", top = 100),
-            createTextBlock("BROT VOLLKORN", top = 150),
-            createTextBlock("BUTTER", top = 200),
-            createTextBlock("EIER 10 STK", top = 250)
-        )
+    fun `should detect food items as groceries`()   {
+        runBlocking {
+            val blocks = listOf(
+                createTextBlock("Store Header1", top = 0),
+                createTextBlock("Store Header2", top = 20),
+                createTextBlock("Store Header3", top = 30),
+                createTextBlock("Store Header4", top = 40),
+                createTextBlock("Store Header5", top = 50),
+                createTextBlock("MILCH 1,5%", top = 100),
+                createTextBlock("BROT VOLLKORN", top = 150),
+                createTextBlock("BUTTER", top = 200),
+                createTextBlock("EIER 10 STK", top = 250)
+            )
 
-        val availableCategories = listOf(
-            CategoryInfo(CategoryId(UUID.randomUUID()), "Lebensmittel"),
-            CategoryInfo(CategoryId(UUID.randomUUID()), "Transport")
-        )
+            val availableCategories = listOf(
+                CategoryInfo(CategoryId(UUID.randomUUID()), "Lebensmittel"),
+                CategoryInfo(CategoryId(UUID.randomUUID()), "Transport")
+            )
 
-        val result = detector.detectCategory(blocks, availableCategories)
+            val result = detector.detectCategory(blocks, availableCategories)
 
-        result shouldBe availableCategories[0].id
+            result shouldBe availableCategories[0].id
+        }
     }
 
     @Test
-    fun `should detect beverages as groceries`() = runBlocking {
-        val blocks = listOf(
-            createTextBlock("Store Header", top = 0),
-            createTextBlock("COCA COLA", top = 100),
-            createTextBlock("MINERALWASSER", top = 150),
-            createTextBlock("ORANGENSAFT", top = 200)
-        )
+    fun `should detect beverages as groceries`()  {
+        runBlocking {
+            val blocks = listOf(
+                createTextBlock("Store Header1", top = 0),
+                createTextBlock("Store Header2", top = 20),
+                createTextBlock("Store Header3", top = 30),
+                createTextBlock("Store Header4", top = 40),
+                createTextBlock("Store Header5", top = 50),
+                createTextBlock("COCA COLA", top = 100),
+                createTextBlock("MINERALWASSER", top = 150),
+                createTextBlock("ORANGENSAFT", top = 200)
+            )
 
-        val availableCategories = listOf(
-            CategoryInfo(CategoryId(UUID.randomUUID()), "Getränke"),
-            CategoryInfo(CategoryId(UUID.randomUUID()), "Transport")
-        )
+            val availableCategories = listOf(
+                CategoryInfo(CategoryId(UUID.randomUUID()), "Getränke"),
+                CategoryInfo(CategoryId(UUID.randomUUID()), "Transport")
+            )
 
-        val result = detector.detectCategory(blocks, availableCategories)
+            val result = detector.detectCategory(blocks, availableCategories)
 
-        result shouldBe availableCategories[0].id
+            result shouldBe availableCategories[0].id
+        }
     }
 
     @Test
-    fun `should detect personal care items`() = runBlocking {
-        val blocks = listOf(
-            createTextBlock("Store Header", top = 0),
-            createTextBlock("SHAMPOO", top = 100),
-            createTextBlock("ZAHNPASTA", top = 150),
-            createTextBlock("SEIFE", top = 200)
-        )
+    fun `should detect personal care items`()   {
+        runBlocking {
+            val blocks = listOf(
+                createTextBlock("Store Header", top = 0),
+                createTextBlock("Store Header1", top = 5),
+                createTextBlock("Store Header2", top = 10),
+                createTextBlock("Store Header3", top = 20),
+                createTextBlock("Store Header4", top = 30),
+                createTextBlock("SHAMPOO", top = 100),
+                createTextBlock("ZAHNPASTA", top = 150),
+                createTextBlock("SEIFE", top = 200)
+            )
 
-        val availableCategories = listOf(
-            CategoryInfo(CategoryId(UUID.randomUUID()), "Groceries"),
-            CategoryInfo(CategoryId(UUID.randomUUID()), "Personal Care")
-        )
+            val availableCategories = listOf(
+                CategoryInfo(CategoryId(UUID.randomUUID()), "Groceries"),
+                CategoryInfo(CategoryId(UUID.randomUUID()), "Personal Care")
+            )
 
-        val result = detector.detectCategory(blocks, availableCategories)
+            val result = detector.detectCategory(blocks, availableCategories)
 
-        result shouldBe availableCategories[1].id
+            result shouldBe availableCategories[1].id
+        }
     }
 
     @Test
-    fun `should return null when no items match`() = runBlocking {
-        val blocks = listOf(
-            createTextBlock("Store Header", top = 0),
-            createTextBlock("UNKNOWN ITEM 1", top = 100),
-            createTextBlock("RANDOM TEXT", top = 150)
-        )
+    fun `should return null when no items match`()  {
+        runBlocking {
+            val blocks = listOf(
+                createTextBlock("Store Header", top = 0),
+                createTextBlock("UNKNOWN ITEM 1", top = 100),
+                createTextBlock("RANDOM TEXT", top = 150)
+            )
 
-        val availableCategories = listOf(
-            CategoryInfo(CategoryId(UUID.randomUUID()), "Groceries"),
-            CategoryInfo(CategoryId(UUID.randomUUID()), "Transport")
-        )
+            val availableCategories = listOf(
+                CategoryInfo(CategoryId(UUID.randomUUID()), "Groceries"),
+                CategoryInfo(CategoryId(UUID.randomUUID()), "Transport")
+            )
 
-        val result = detector.detectCategory(blocks, availableCategories)
+            val result = detector.detectCategory(blocks, availableCategories)
 
-        result shouldBe null
+            result shouldBe null
+        }
     }
 
     @Test
-    fun `should choose most dominant category when mixed items`() = runBlocking {
-        val blocks = listOf(
-            createTextBlock("Store Header", top = 0),
-            createTextBlock("MILCH", top = 100),
-            createTextBlock("BROT", top = 150),
-            createTextBlock("KÄSE", top = 200),
-            createTextBlock("SHAMPOO", top = 250) // Only one personal care item
-        )
+    fun `should choose most dominant category when mixed items`()  {
+        runBlocking {
+            val blocks = listOf(
+                createTextBlock("Store Header1", top = 0),
+                createTextBlock("Store Header2", top = 20),
+                createTextBlock("Store Header3", top = 30),
+                createTextBlock("Store Header4", top = 40),
+                createTextBlock("Store Header5", top = 50),
+                createTextBlock("MILCH", top = 100),
+                createTextBlock("BROT", top = 150),
+                createTextBlock("KÄSE", top = 200),
+                createTextBlock("SHAMPOO", top = 250) // Only one personal care item
+            )
 
-        val availableCategories = listOf(
-            CategoryInfo(CategoryId(UUID.randomUUID()), "Food"),
-            CategoryInfo(CategoryId(UUID.randomUUID()), "Personal Care")
-        )
+            val availableCategories = listOf(
+                CategoryInfo(CategoryId(UUID.randomUUID()), "Food"),
+                CategoryInfo(CategoryId(UUID.randomUUID()), "Personal Care")
+            )
 
-        val result = detector.detectCategory(blocks, availableCategories)
+            val result = detector.detectCategory(blocks, availableCategories)
 
-        // Should match Food category because it has 3 items vs 1 personal care
-        result shouldBe availableCategories[0].id
+            // Should match Food category because it has 3 items vs 1 personal care
+            result shouldBe availableCategories[0].id
+        }
     }
 
     private fun createTextBlock(text: String, top: Int): TextBlock {
