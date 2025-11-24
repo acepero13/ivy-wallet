@@ -103,6 +103,13 @@ class SharedTransactionRepository @Inject constructor(
         val sharedAccount = sharedAccountRepository.get().findById(sharedTrx.sharedAccountId) ?: return
         val linkedAccountId = sharedAccount.linkedAccountId ?: return
 
+        // If transaction is marked as deleted, delete it from regular transactions
+        if (sharedTrx.deleted) {
+            transactionRepository.get().deleteById(com.ivy.data.model.TransactionId(sharedTrx.id.value))
+            timber.log.Timber.d("Deleted regular transaction ${sharedTrx.id.value} because shared transaction was deleted")
+            return
+        }
+
         // Convert SharedTransaction to regular Transaction
         val regularTransaction = when (sharedTrx.type) {
             com.ivy.data.model.SharedTransactionType.INCOME -> {

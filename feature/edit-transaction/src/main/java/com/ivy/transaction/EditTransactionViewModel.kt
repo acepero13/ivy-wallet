@@ -671,8 +671,42 @@ class EditTransactionViewModel @Inject constructor(
     private fun delete() {
         viewModelScope.launch {
             ioThread {
-                loadedTransaction?.let {
-                    transactionRepo.deleteById(TransactionId(it.id))
+                loadedTransaction?.let { transaction ->
+                    // Check if this is a shared transaction
+                    val sharedAccount = selectedSharedAccount
+                    if (sharedAccount != null) {
+                        // This is a shared transaction - need to sync deletion
+                        val sharedTransactionId = com.ivy.data.model.SharedTransactionId(transaction.id)
+
+                        // Find the shared transaction to get its full data
+                        val sharedTransaction = sharedTransactionRepository.findById(sharedTransactionId)
+
+                        if (sharedTransaction != null) {
+                            android.util.Log.d("EditTransactionVM", "Deleting shared transaction: ${sharedTransactionId.value}")
+
+                            // Mark as deleted in Firestore (soft delete)
+                            firestoreInvitationRepository.saveSharedTransaction(
+                                sharedAccountId = sharedTransaction.sharedAccountId,
+                                transactionId = sharedTransaction.id.value.toString(),
+                                type = sharedTransaction.type.name,
+                                amount = sharedTransaction.amount,
+                                title = sharedTransaction.title?.value,
+                                description = sharedTransaction.description?.value,
+                                category = sharedTransaction.category?.value?.toString(),
+                                time = sharedTransaction.time.toEpochMilli(),
+                                createdBy = sharedTransaction.createdBy,
+                                createdAt = sharedTransaction.createdAt.toEpochMilli(),
+                                updatedAt = timeProvider.utcNow().toEpochMilli(),
+                                updatedBy = "local-user", // TODO: Get actual Firebase UID
+                                deleted = true // Mark as deleted
+                            )
+
+                            android.util.Log.d("EditTransactionVM", "Marked shared transaction as deleted in Firestore")
+                        }
+                    }
+
+                    // Delete from local repository (regular transactions)
+                    transactionRepo.deleteById(TransactionId(transaction.id))
                 }
                 closeScreen()
             }
