@@ -10,11 +10,19 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
+import com.ivy.data.model.Category
+import com.ivy.data.model.CategoryId
+import com.ivy.data.repository.CategoryRepository
+import com.ivy.receipts.category.CategoryDetector
+import com.ivy.receipts.category.CompositeCategoryDetector
 import com.ivy.receipts.ocr.TextBlock
 import com.ivy.receipts.ocr.TextLine
+import com.ivy.receipts.parser.locales.GermanReceiptPatterns
 import io.kotest.matchers.doubles.shouldBeGreaterThan
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
+import io.mockk.coEvery
+import io.mockk.mockk
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.tasks.await
 import org.junit.Before
@@ -41,12 +49,29 @@ class ReceiptImageParsingTest {
     private lateinit var parser: RegexMlkitParser
 
     private lateinit var spatialParser: SpatialReceiptParser
+    private lateinit var mockCategoryRepository: CategoryRepository
+    private lateinit var patterns: ReceiptPatterns
+    private lateinit var categoryDetector: CategoryDetector
 
     @Before
     fun setup() {
         context = InstrumentationRegistry.getInstrumentation().targetContext
         parser = RegexMlkitParser.withAutoDetection()
-        spatialParser = SpatialReceiptParser()
+
+        // Create mock CategoryRepository with relaxed mode to handle inline value classes
+        mockCategoryRepository = mockk<CategoryRepository>(relaxed = true)
+        coEvery { mockCategoryRepository.findAll() } returns emptyList()
+
+        // Create patterns and category detector
+        patterns = GermanReceiptPatterns()
+        categoryDetector = CompositeCategoryDetector()
+
+        // Create SpatialReceiptParser with dependencies
+        spatialParser = SpatialReceiptParser(
+            categoryRepository = mockCategoryRepository,
+            patterns = patterns,
+            categoryDetector = categoryDetector
+        )
     }
 
 

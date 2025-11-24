@@ -3,7 +3,7 @@ package com.ivy.receipts.ocr
 import android.graphics.Rect
 import android.net.Uri
 import arrow.core.Either
-import com.ivy.data.model.Category
+import com.ivy.data.model.CategoryId
 import java.math.BigDecimal
 import java.time.Instant
 
@@ -50,7 +50,8 @@ data class OcrReceipt(
     val total: BigDecimal,
     val currency: String,
     val date: Instant,
-    val categories: List<Category>
+    val categoryId: CategoryId?,
+    val merchantName: String? = null
 )
 
 

@@ -22,7 +22,7 @@ class RegexMlkitParser(
     private var patterns: ReceiptPatterns? = null
 ) : ReceiptParseable {
 
-    override fun parse(blocks: List<TextBlock>): OcrReceipt {
+    override suspend fun parse(blocks: List<TextBlock>): OcrReceipt {
         val allLines = extractTextLines(blocks)
         val currentPatterns = getOrDetectLocalizedPatterns(allLines)
         val items = parseItems(allLines, currentPatterns)
@@ -33,7 +33,7 @@ class RegexMlkitParser(
             total = BigDecimal.valueOf(total),
             currency = currentPatterns.defaultCurrency,
             date = date,
-            categories = emptyList() // Categories would be determined by the user or ML classification
+            categoryId = null // TODO: Implement category detection
         )
     }
 

@@ -35,6 +35,7 @@ data class EditTransactionScreen(
     var ocrAmount: BigDecimal? = null,
     val ocrDate: Instant? = null,
     val ocrDescription: String? = null,
+    val ocrTitle: String? = null,
 ) : Screen {
     override val isLegacy: Boolean
         get() = true

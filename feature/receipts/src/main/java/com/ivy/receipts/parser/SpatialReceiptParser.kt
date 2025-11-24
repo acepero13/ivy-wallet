@@ -1,5 +1,9 @@
 package com.ivy.receipts.parser
 
+import com.ivy.data.repository.CategoryRepository
+import com.ivy.receipts.category.CategoryDetector
+import com.ivy.receipts.category.CategoryInfo
+import com.ivy.receipts.category.CompositeCategoryDetector
 import com.ivy.receipts.ocr.OcrReceipt
 import com.ivy.receipts.ocr.TextBlock
 import com.ivy.receipts.parser.locales.EnglishReceiptPatterns
@@ -10,6 +14,7 @@ import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import javax.inject.Inject
 import kotlin.math.abs
 
 /**
@@ -20,8 +25,10 @@ import kotlin.math.abs
  * appear on different lines but are spatially aligned or nearby.
  */
 
-class SpatialReceiptParser(
-    private val patterns: ReceiptPatterns = GermanReceiptPatterns()
+class SpatialReceiptParser @Inject constructor(
+    private val categoryRepository: CategoryRepository,
+    private val patterns: ReceiptPatterns,
+    private val categoryDetector: CategoryDetector
 ) : ReceiptParseable {
 
     private val amountExtractor = AmountExtractor()
@@ -29,8 +36,9 @@ class SpatialReceiptParser(
     private val spatialTotalFinder = SpatialTotalFinder()
     private val fallbackExtractor = FallbackExtractor()
     private val dateExtractor = DateExtractor()
+    private val merchantExtractor = MerchantExtractor()
 
-    override fun parse(blocks: List<TextBlock>): OcrReceipt {
+    override suspend fun parse(blocks: List<TextBlock>): OcrReceipt {
         val sortedBlocks = blocks
             .filter { it.boundingBox != null }
             .sortedBy { it.boundingBox!!.top }
@@ -45,11 +53,18 @@ class SpatialReceiptParser(
 
         val date = dateExtractor.extract(allLines, patterns)
 
+        // Detect category from receipt
+        val categoryId = detectCategory(blocks)
+
+        // Extract merchant name
+        val merchantName = merchantExtractor.extractMerchantName(blocks)
+
         return OcrReceipt(
             total = BigDecimal.valueOf(total),
             currency = patterns.defaultCurrency,
             date = date,
-            categories = emptyList(),
+            categoryId = categoryId,
+            merchantName = merchantName
         )
     }
 
@@ -266,6 +281,19 @@ class SpatialReceiptParser(
                 decimalSeparator = patterns.decimalSeparator(),
                 thousandsSeparator = patterns.thousandsSeparator()
             )
+    }
+
+    /**
+     * Detect category from receipt using available categories.
+     */
+    private suspend fun detectCategory(blocks: List<TextBlock>) = try {
+        val availableCategories = categoryRepository.findAll().map {
+            CategoryInfo(id = it.id, name = it.name.value)
+        }
+        categoryDetector.detectCategory(blocks, availableCategories)
+    } catch (e: Exception) {
+        println("Category detection failed: ${e.message}")
+        null
     }
 }
 

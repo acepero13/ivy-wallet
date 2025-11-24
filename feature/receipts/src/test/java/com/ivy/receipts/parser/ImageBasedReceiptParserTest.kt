@@ -7,6 +7,7 @@ import io.kotest.matchers.bigdecimal.shouldBeGreaterThan
 import io.kotest.matchers.doubles.shouldBeGreaterThan
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
+import kotlinx.coroutines.runBlocking
 import org.junit.Before
 import org.junit.Test
 import java.io.File
@@ -34,7 +35,7 @@ class ImageBasedReceiptParserTest {
     }
 
     @Test
-    fun `parse receipt from simulated ML Kit OCR output - German REWE receipt`() {
+    fun `parse receipt from simulated ML Kit OCR output - German REWE receipt`() = runBlocking {
         // This simulates the exact OCR output you would get from ML Kit
         // when scanning a real REWE receipt image
         val mlKitOcrOutput = simulateMLKitOCR(
@@ -75,7 +76,7 @@ class ImageBasedReceiptParserTest {
     }
 
     @Test
-    fun `parse receipt from simulated ML Kit OCR output - US Walmart receipt`() {
+    fun `parse receipt from simulated ML Kit OCR output - US Walmart receipt`() = runBlocking {
         val mlKitOcrOutput = simulateMLKitOCR(
             """
             WALMART SUPERCENTER
@@ -112,7 +113,7 @@ class ImageBasedReceiptParserTest {
     }
 
     @Test
-    fun `parse receipt with OCR recognition errors - simulates real-world imperfect OCR`() {
+    fun `parse receipt with OCR recognition errors - simulates real-world imperfect OCR`() = runBlocking {
         // Real OCR often makes mistakes - this simulates common errors
         val mlKitOcrOutput = simulateMLKitOCR(
             """
@@ -145,7 +146,7 @@ class ImageBasedReceiptParserTest {
     }
 
     @Test
-    fun `parse receipt from image file path - demonstrates file loading pattern`() {
+    fun `parse receipt from image file path - demonstrates file loading pattern`() = runBlocking {
         // This demonstrates the pattern for loading images from files
         // In a real test, you would:
         // 1. Load the image file from resources
@@ -184,7 +185,7 @@ class ImageBasedReceiptParserTest {
     }
 
     @Test
-    fun `demonstrate how to handle image resource loading`() {
+    fun `demonstrate how to handle image resource loading`() = runBlocking {
         // This test shows the pattern you would use to load actual image resources
 
         val resourcePath = "images/german_receipt_rewe.jpg"
@@ -204,7 +205,7 @@ class ImageBasedReceiptParserTest {
     }
 
     @Test
-    fun `parse high-quality OCR output with perfect confidence`() {
+    fun `parse high-quality OCR output with perfect confidence`() = runBlocking {
         val mlKitOcrOutput = simulateMLKitOCR(
             """
             EDEKA
@@ -232,7 +233,7 @@ class ImageBasedReceiptParserTest {
     }
 
     @Test
-    fun `parse low-quality OCR output with poor confidence`() {
+    fun `parse low-quality OCR output with poor confidence`() = runBlocking {
         // Simulates OCR from a blurry or poorly lit image
         val mlKitOcrOutput = simulateMLKitOCR(
             """

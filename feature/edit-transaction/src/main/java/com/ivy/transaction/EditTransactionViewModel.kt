@@ -192,7 +192,7 @@ class EditTransactionViewModel @Inject constructor(
             reset()
 
             val amount: BigDecimal = screen.ocrAmount ?: BigDecimal.ZERO
-            val dateTime = screen.ocrDate
+
 
             loadedTransaction = screen.initialTransactionId?.let {
                 trnByIdAct(it)
@@ -205,7 +205,9 @@ class EditTransactionViewModel @Inject constructor(
                 type = screen.type,
                 amount = amount,
                 toAmount = BigDecimal.ZERO,
-                dateTime = dateTime
+                dateTime = screen.ocrDate,
+                title = screen.ocrTitle,
+                description = screen.ocrDescription
             )
 
             tags = tagList.await()
