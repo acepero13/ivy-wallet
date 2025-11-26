@@ -3,6 +3,7 @@ package com.ivy.receipts.parser.strategies
 import com.ivy.receipts.ocr.TextBlock
 import com.ivy.receipts.parser.ReceiptPatterns
 import com.ivy.receipts.parser.TotalFinderStrategy
+import com.ivy.receipts.parser.normalizeReceiptAmount
 
 /**
  * Strategy that finds totals by looking for repeated amounts.
@@ -28,12 +29,20 @@ class RepetitionStrategy : TotalFinderStrategy {
     ): Double? {
         println("  [RepetitionStrategy] Looking for repeated amounts...")
 
-        // Extract all amounts from all blocks
+        // Extract all amounts from all blocks, with normalization for OCR errors
         val amounts = mutableListOf<Double>()
+        val amountTexts = mutableMapOf<Double, MutableList<String>>() // Track original text for debugging
+
         for (block in blocks) {
-            val amount = extractAmount(block.text)
-            if (amount >= 10.0) { // Filter small amounts
-                amounts.add(amount)
+            // Use direct normalization to handle OCR comma/period confusion
+            // This is more reliable than extractAmount when OCR mixes up separators
+            // For example: "51,54" and "51.54" both normalize to 51.54
+            val normalizedAmount = block.text.normalizeReceiptAmount()
+
+            if (normalizedAmount >= 10.0) {
+                amounts.add(normalizedAmount)
+                amountTexts.getOrPut(normalizedAmount) { mutableListOf() }.add(block.text)
+                println("  [RepetitionStrategy] Block \"${block.text}\" -> normalized to $normalizedAmount")
             }
         }
 
@@ -50,7 +59,8 @@ class RepetitionStrategy : TotalFinderStrategy {
             .sortedByDescending { it.value }
             .take(5)
             .forEach { (amount, count) ->
-                println("    $amount appears $count time(s)")
+                val texts = amountTexts[amount]?.take(3)?.joinToString(", ") { "\"$it\"" } ?: ""
+                println("    $amount appears $count time(s) [from: $texts]")
             }
 
         // Find amounts that appear 2+ times

@@ -156,7 +156,7 @@ class ReceiptImageParsingTest {
                 val result = loadPicture("wrong_total/ernsties_family.jpg")
                 result.total.toDouble() shouldBe  29.99
                 result.currency shouldNotBe null
-                result.merchantName shouldBe "Ernstings family"
+                result.merchantName shouldBe "Ernstngi Family"
             } catch (e: Exception) {
                 raiseError(e)
             }

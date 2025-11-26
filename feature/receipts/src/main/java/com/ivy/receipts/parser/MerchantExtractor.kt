@@ -51,7 +51,8 @@ class MerchantExtractor(
 
         // Find first matching merchant (prioritize by order of appearance in patterns)
         for ((merchantName, _) in patterns.merchantMappings) {
-            if (merchantText.contains(merchantName)) {
+            // Compare in uppercase for case-insensitive matching
+            if (merchantText.contains(merchantName.uppercase(Locale.getDefault()))) {
                 println("Matched merchant: $merchantName")
                 return merchantName.toTitleCase()
             }
