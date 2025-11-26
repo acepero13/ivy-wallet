@@ -58,7 +58,11 @@ class GermanMerchantPatterns : MerchantCategoryPatterns {
         "H&M" to MerchantType.CLOTHING,
         "ZARA" to MerchantType.CLOTHING,
         "C&A" to MerchantType.CLOTHING,
-        "PRIMARK" to MerchantType.CLOTHING
+        "PRIMARK" to MerchantType.CLOTHING,
+        "Ernstngi family" to MerchantType.CLOTHING,
+        "Ernstings family" to MerchantType.CLOTHING,
+        "Ernsting's family" to MerchantType.CLOTHING,
+        "Ernsting's famiļy GmbH" to MerchantType.CLOTHING,
     )
 
     override fun getCategoryKeywords(merchantType: MerchantType): List<String> {
