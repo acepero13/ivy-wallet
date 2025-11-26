@@ -20,7 +20,8 @@
       "Bash(adb devices:*)",
       "Bash(adb exec-out:*)",
       "Bash(/tmp/ivywallet_update.db)",
-      "Bash(/tmp/ivywallet_real.db)"
+      "Bash(/tmp/ivywallet_real.db)",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []

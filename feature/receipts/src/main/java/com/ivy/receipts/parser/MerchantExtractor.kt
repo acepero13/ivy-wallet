@@ -1,5 +1,6 @@
 package com.ivy.receipts.parser
 
+import android.util.Log
 import com.ivy.receipts.category.MerchantCategoryPatterns
 import com.ivy.receipts.category.locales.GermanMerchantPatterns
 import com.ivy.receipts.ocr.TextBlock
@@ -21,21 +22,30 @@ class MerchantExtractor(
      */
     fun extractMerchantName(blocks: List<TextBlock>): String? {
         val filteredBlocks = blocks.filter { it.boundingBox != null }
-        if (filteredBlocks.isEmpty()) return null
+        if (filteredBlocks.isEmpty()) {
+            Log.d(TAG, "No blocks with bounding boxes for merchant extraction")
+            return null
+        }
 
         // Detect orientation
         val allBounds = filteredBlocks.mapNotNull { it.boundingBox }
-        val imageWidth = allBounds.maxOf { it.right } - allBounds.minOf { it.left }
-        val imageHeight = allBounds.maxOf { it.bottom } - allBounds.minOf { it.top }
-        val isLandscape = imageWidth.toDouble() / imageHeight > 1.2
+        val imageWidth = allBounds.maxOfOrNull { it.right }?.minus(allBounds.minOfOrNull { it.left } ?: 0) ?: 0
+        val imageHeight = allBounds.maxOfOrNull { it.bottom }?.minus(allBounds.minOfOrNull { it.top } ?: 0) ?: 0
+
+        if (imageHeight == 0) {
+            Log.w(TAG, "Invalid image dimensions for merchant extraction")
+            return null
+        }
+
+        val isLandscape = imageWidth.toDouble() / imageHeight > ParserConstants.LANDSCAPE_RATIO_THRESHOLD
 
         // Sort blocks by appropriate coordinate based on orientation
         val sortedBlocks = if (isLandscape) {
             // For landscape: leftmost blocks are at the "top"
-            filteredBlocks.sortedBy { it.boundingBox!!.left }
+            filteredBlocks.sortedBy { it.boundingBox?.left ?: 0 }
         } else {
             // For portrait: topmost blocks are at the top
-            filteredBlocks.sortedBy { it.boundingBox!!.top }
+            filteredBlocks.sortedBy { it.boundingBox?.top ?: 0 }
         }
 
         // Extract text from top of receipt
@@ -44,27 +54,36 @@ class MerchantExtractor(
         val topBlocks = sortedBlocks.take(numBlocksToCheck)
         val merchantText = topBlocks.joinToString(" ") { it.text }.uppercase(Locale.getDefault())
 
-        println("=== MERCHANT EXTRACTION ===")
-        println("Orientation: ${if (isLandscape) "LANDSCAPE" else "PORTRAIT"}")
-        println("Top $numBlocksToCheck blocks text: ${topBlocks.map { it.text }}")
-        println("Merchant text for matching: '$merchantText'")
+        Log.d(TAG, "Orientation: ${if (isLandscape) "LANDSCAPE" else "PORTRAIT"}")
+        Log.d(TAG, "Top $numBlocksToCheck blocks text: ${topBlocks.map { it.text }}")
+        Log.d(TAG, "Merchant text for matching: '$merchantText'")
 
         // Find first matching merchant (prioritize by order of appearance in patterns)
         for ((merchantName, _) in patterns.merchantMappings) {
             // Compare in uppercase for case-insensitive matching
             if (merchantText.contains(merchantName.uppercase(Locale.getDefault()))) {
-                println("Matched merchant: $merchantName")
+                Log.i(TAG, "Matched merchant: $merchantName")
                 return merchantName.toTitleCase()
             }
         }
 
-        println("No merchant match found in patterns")
+        Log.d(TAG, "No merchant match found in patterns")
 
         // If no known merchant found, try to extract from first block
-        return topBlocks.firstOrNull()?.text
+        val fallbackName = topBlocks.firstOrNull()?.text
             ?.trim()
             ?.takeIf { it.length in 2..30 } // Reasonable merchant name length
             ?.toTitleCase()
+
+        if (fallbackName != null) {
+            Log.d(TAG, "Using fallback merchant name: $fallbackName")
+        }
+
+        return fallbackName
+    }
+
+    companion object {
+        private const val TAG = "MerchantExtractor"
     }
 
     /**

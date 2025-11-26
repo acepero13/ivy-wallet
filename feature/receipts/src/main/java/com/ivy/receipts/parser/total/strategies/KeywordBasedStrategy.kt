@@ -1,8 +1,8 @@
-package com.ivy.receipts.parser.strategies
+package com.ivy.receipts.parser.total.strategies
 
 import com.ivy.receipts.ocr.TextBlock
 import com.ivy.receipts.parser.ReceiptPatterns
-import com.ivy.receipts.parser.TotalFinderStrategy
+import com.ivy.receipts.parser.total.TotalFinderStrategy
 import kotlin.math.abs
 
 /**

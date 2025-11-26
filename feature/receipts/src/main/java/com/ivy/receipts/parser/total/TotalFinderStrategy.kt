@@ -1,6 +1,7 @@
-package com.ivy.receipts.parser
+package com.ivy.receipts.parser.total
 
 import com.ivy.receipts.ocr.TextBlock
+import com.ivy.receipts.parser.ReceiptPatterns
 
 /**
  * Strategy for finding the total amount on a receipt.
