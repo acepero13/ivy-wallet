@@ -51,6 +51,8 @@ class AddTransactionWidgetCompact : AppWidgetProvider() {
 
         clickSetup.clickListener(R.id.ivTransfer, AddTransactionWidgetClick.ACTION_ADD_TRANSFER)
 
+        clickSetup.clickListener(R.id.ivScan, AddTransactionWidgetClick.ACTION_SCAN_RECEIPT)
+
         appWidgetManager.updateAppWidget(appWidgetId, rv)
     }
 

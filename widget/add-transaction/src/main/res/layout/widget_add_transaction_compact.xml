@@ -45,6 +45,13 @@
             android:layout_weight="1"
             android:layout_height="48dp"
             android:src="@drawable/ic_widget_transfer" />
+
+        <ImageView
+            android:id="@+id/ivScan"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="48dp"
+            android:src="@drawable/ic_widget_scan" />
     </LinearLayout>
 
 </LinearLayout>

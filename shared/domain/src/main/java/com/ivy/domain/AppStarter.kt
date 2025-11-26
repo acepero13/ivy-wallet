@@ -10,4 +10,5 @@ interface AppStarter {
     fun getRootIntent(): Intent
     fun defaultStart()
     fun addTransactionStart(type: TransactionType)
+    fun scanReceipt()
 }

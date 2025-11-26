@@ -17,6 +17,7 @@ class AddTransactionWidgetClick @Inject constructor(
         const val ACTION_ADD_INCOME = "com.ivy.wallet.ACTION_ADD_INCOME"
         const val ACTION_ADD_EXPENSE = "com.ivy.wallet.ACTION_ADD_EXPENSE"
         const val ACTION_ADD_TRANSFER = "com.ivy.wallet.ACTION_ADD_TRANSFER"
+        const val ACTION_SCAN_RECEIPT = "com.ivy.wallet.ACTION_SCAN_RECEIPT"
     }
 
     // ============================= <HANDLE> =======================================================
@@ -32,6 +33,9 @@ class AddTransactionWidgetClick @Inject constructor(
 
             ACTION_ADD_TRANSFER -> {
                 appStarter.addTransactionStart(TransactionType.TRANSFER)
+            }
+            ACTION_SCAN_RECEIPT -> {
+                appStarter.scanReceipt()
             }
 
             else -> return
