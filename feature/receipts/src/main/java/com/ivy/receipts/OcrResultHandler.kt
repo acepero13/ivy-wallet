@@ -9,6 +9,7 @@ import com.ivy.navigation.Navigation
 import com.ivy.receipts.ocr.MlKitOcrEngine
 import com.ivy.receipts.ocr.OcrReceipt
 import com.ivy.receipts.parser.ReceiptParseable
+import timber.log.Timber
 import javax.inject.Inject
 
 
@@ -31,12 +32,12 @@ class OcrResultHandler @Inject constructor(
             ifLeft = { error ->
                 // Handle OCR error
                 // TODO: Show error to user
-                Log.e("OcrResultHandler", "OCR failed: $error")
+                Timber.tag("OcrResultHandler").e("OCR failed: $error")
             },
             ifRight = { result ->
-                Log.d("OcrResultHandler", "Result from OCR: $result")
+                Timber.tag("OcrResultHandler").d("Result from OCR: $result")
                 val receipt = parser.parse(result.blocks)
-                Log.d("OcrResultHandler", "Parsed receipt: $receipt")
+                Timber.tag("OcrResultHandler").d("Parsed receipt: $receipt")
                 navigateToTransactionWithOcrData(receipt)
             }
         )

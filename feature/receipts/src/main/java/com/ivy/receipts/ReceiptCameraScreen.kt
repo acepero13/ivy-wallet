@@ -8,6 +8,7 @@ import com.ivy.navigation.navigation
 import com.ivy.receipts.camera.CameraScreen
 import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.launch
+import timber.log.Timber
 
 
 /**
@@ -30,7 +31,7 @@ fun ReceiptCameraScreen(screen: ReceiptCameraScreen) {
 
     CameraScreen(
         onImageCaptured = { uri ->
-            android.util.Log.d("ReceiptCameraScreen", "Image captured: $uri")
+            Timber.tag("ReceiptCameraScreen").d("Image captured: $uri")
             coroutineScope.launch {
                 ocrResultHandler.processReceiptAndCreateTransaction(uri)
             }

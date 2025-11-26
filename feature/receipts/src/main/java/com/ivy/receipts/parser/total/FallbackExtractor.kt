@@ -2,6 +2,7 @@ package com.ivy.receipts.parser.total
 
 import android.util.Log
 import com.ivy.receipts.parser.ReceiptPatterns
+import timber.log.Timber
 
 /**
  * Extracts totals using text-based fallback logic when spatial parsing fails.
@@ -24,21 +25,21 @@ class FallbackExtractor {
         patterns: ReceiptPatterns,
         amountExtractor: AmountExtractor
     ): Double {
-        Log.d(TAG, "Attempting fallback extraction from ${lines.size} lines")
+        Timber.tag(TAG).d("Attempting fallback extraction from ${lines.size} lines")
 
         for (line in lines) {
             val match = patterns.totalPattern.find(line)
             if (match != null) {
-                Log.d(TAG, "Found total pattern match in line: $line")
+                Timber.tag(TAG).d("Found total pattern match in line: $line")
                 val amount = extractAmountFromMatch(match, patterns, amountExtractor)
                 if (amount > 0) {
-                    Log.d(TAG, "Extracted total from fallback: $amount")
+                    Timber.tag(TAG).d("Extracted total from fallback: $amount")
                     return amount
                 }
             }
         }
 
-        Log.d(TAG, "No total found in fallback extraction")
+        Timber.tag(TAG).d("No total found in fallback extraction")
         return 0.0
     }
 
@@ -56,12 +57,12 @@ class FallbackExtractor {
             val value = match.groupValues[i]
             if (value.matches(Regex("\\d+[,.]\\d+"))) {
                 val amount = amountExtractor.parseMoney(value, patterns)
-                Log.d(TAG, "Parsed amount $amount from match group $i: $value")
+                Timber.tag(TAG).d("Parsed amount $amount from match group $i: $value")
                 return amount
             }
         }
 
-        Log.d(TAG, "No numeric value found in match groups")
+        Timber.tag(TAG).d("No numeric value found in match groups")
         return 0.0
     }
 

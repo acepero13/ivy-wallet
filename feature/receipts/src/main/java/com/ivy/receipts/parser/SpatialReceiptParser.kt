@@ -1,6 +1,5 @@
 package com.ivy.receipts.parser
 
-import android.util.Log
 import com.ivy.data.repository.CategoryRepository
 import com.ivy.receipts.category.CategoryDetector
 import com.ivy.receipts.category.CategoryInfo
@@ -11,12 +10,13 @@ import com.ivy.receipts.parser.locales.GermanReceiptPatterns
 import com.ivy.receipts.parser.orientation.LandscapeStrategy
 import com.ivy.receipts.parser.orientation.OrientationStrategy
 import com.ivy.receipts.parser.orientation.PortraitStrategy
-import com.ivy.receipts.parser.total.strategies.KeywordBasedStrategy
-import com.ivy.receipts.parser.total.strategies.LargestAmountStrategy
-import com.ivy.receipts.parser.total.strategies.RepetitionStrategy
 import com.ivy.receipts.parser.total.AmountExtractor
 import com.ivy.receipts.parser.total.CompositeTotalFinder
 import com.ivy.receipts.parser.total.FallbackExtractor
+import com.ivy.receipts.parser.total.strategies.KeywordBasedStrategy
+import com.ivy.receipts.parser.total.strategies.LargestAmountStrategy
+import com.ivy.receipts.parser.total.strategies.RepetitionStrategy
+import timber.log.Timber
 import java.math.BigDecimal
 import java.time.Instant
 import javax.inject.Inject
@@ -52,23 +52,23 @@ class SpatialReceiptParser @Inject constructor(
 
     override suspend fun parse(blocks: List<TextBlock>): OcrReceipt {
         return try {
-            Log.i(TAG, "=== Starting receipt parsing ===")
-            Log.i(TAG, "Total blocks: ${blocks.size}")
+            Timber.tag(TAG).i("=== Starting receipt parsing ===")
+            Timber.tag(TAG).i("Total blocks: ${blocks.size}")
 
             val filteredBlocks = blocks.filter { it.boundingBox != null }
-            Log.d(TAG, "Blocks with bounding boxes: ${filteredBlocks.size}")
+            Timber.tag(TAG).d("Blocks with bounding boxes: ${filteredBlocks.size}")
 
             if (filteredBlocks.isEmpty()) {
-                Log.w(TAG, "No blocks with bounding boxes found")
+                Timber.tag(TAG).w("No blocks with bounding boxes found")
                 return createEmptyReceipt()
             }
 
             // Detect orientation and select strategy
             val strategy = selectOrientationStrategy(filteredBlocks)
-            Log.i(TAG, "Detected orientation: ${strategy.javaClass.simpleName}")
+            Timber.tag(TAG).i("Detected orientation: ${strategy.javaClass.simpleName}")
 
             val rows = rowGrouper.group(filteredBlocks, strategy)
-            Log.d(TAG, "Grouped into ${rows.size} rows")
+            Timber.tag(TAG).d("Grouped into ${rows.size} rows")
 
             val allLines = blocks.flatMap { it.lines.map { l -> l.text } }
 
@@ -81,21 +81,21 @@ class SpatialReceiptParser @Inject constructor(
                 amountExtractor.extractStandaloneAmount(text, patterns)
             } ?: fallbackExtractor.extractTotal(allLines, patterns, amountExtractor)
 
-            Log.i(TAG, "Final total: $total")
+            Timber.tag(TAG).i("Final total: $total")
 
             val date = dateExtractor.extract(allLines, patterns)
-            Log.d(TAG, "Extracted date: $date")
+            Timber.tag(TAG).d("Extracted date: $date")
 
             // Detect category from receipt
             val categoryId = detectCategory(blocks)
             if (categoryId != null) {
-                Log.d(TAG, "Detected category ID: $categoryId")
+                Timber.tag(TAG).d("Detected category ID: $categoryId")
             }
 
             // Extract merchant name
             val merchantName = merchantExtractor.extractMerchantName(blocks)
             if (merchantName != null) {
-                Log.d(TAG, "Extracted merchant: $merchantName")
+                Timber.tag(TAG).d("Extracted merchant: $merchantName")
             }
 
             OcrReceipt(
@@ -106,7 +106,7 @@ class SpatialReceiptParser @Inject constructor(
                 merchantName = merchantName
             )
         } catch (e: Exception) {
-            Log.e(TAG, "Error parsing receipt", e)
+            Timber.tag(TAG).e(e, "Error parsing receipt")
             createEmptyReceipt()
         }
     }
@@ -116,26 +116,28 @@ class SpatialReceiptParser @Inject constructor(
      */
     private fun selectOrientationStrategy(blocks: List<TextBlock>): OrientationStrategy {
         if (blocks.isEmpty()) {
-            Log.w(TAG, "No blocks provided, defaulting to portrait")
+            Timber.tag(TAG).w("No blocks provided, defaulting to portrait")
             return PortraitStrategy()
         }
 
         val allBounds = blocks.mapNotNull { it.boundingBox }
         if (allBounds.isEmpty()) {
-            Log.w(TAG, "No bounding boxes found, defaulting to portrait")
+            Timber.tag(TAG).w("No bounding boxes found, defaulting to portrait")
             return PortraitStrategy()
         }
 
-        val imageWidth = allBounds.maxOfOrNull { it.right }?.minus(allBounds.minOfOrNull { it.left } ?: 0) ?: 0
-        val imageHeight = allBounds.maxOfOrNull { it.bottom }?.minus(allBounds.minOfOrNull { it.top } ?: 0) ?: 0
+        val imageWidth =
+            allBounds.maxOfOrNull { it.right }?.minus(allBounds.minOfOrNull { it.left } ?: 0) ?: 0
+        val imageHeight =
+            allBounds.maxOfOrNull { it.bottom }?.minus(allBounds.minOfOrNull { it.top } ?: 0) ?: 0
 
         if (imageHeight == 0) {
-            Log.w(TAG, "Invalid image dimensions, defaulting to portrait")
+            Timber.tag(TAG).w("Invalid image dimensions, defaulting to portrait")
             return PortraitStrategy()
         }
 
         val imageRatio = imageWidth.toDouble() / imageHeight
-        Log.d(TAG, "Image dimensions: ${imageWidth}x${imageHeight}, ratio=$imageRatio")
+        Timber.tag(TAG).d("Image dimensions: ${imageWidth}x${imageHeight}, ratio=$imageRatio")
 
         // Image is landscape if width > height (using threshold from constants)
         return if (imageRatio > ParserConstants.LANDSCAPE_RATIO_THRESHOLD) {
@@ -154,7 +156,7 @@ class SpatialReceiptParser @Inject constructor(
         }
         categoryDetector.detectCategory(blocks, availableCategories)
     } catch (e: Exception) {
-        Log.e(TAG, "Category detection failed", e)
+        Timber.tag(TAG).e(e, "Category detection failed")
         null
     }
 
@@ -180,7 +182,7 @@ class SpatialReceiptParser @Inject constructor(
 class RowGrouper {
     fun group(blocks: List<TextBlock>, strategy: OrientationStrategy): List<List<TextBlock>> {
         if (blocks.isEmpty()) {
-            Log.d(TAG, "No blocks to group")
+            Timber.tag(TAG).d("No blocks to group")
             return emptyList()
         }
 
@@ -188,12 +190,12 @@ class RowGrouper {
             val sortedBlocks = strategy.sortBlocksForRows(blocks)
             val rows = strategy.groupIntoRows(sortedBlocks)
 
-            Log.d(TAG, "Grouped ${blocks.size} blocks into ${rows.size} rows")
+            Timber.tag(TAG).d("Grouped ${blocks.size} blocks into ${rows.size} rows")
 
             // Sort blocks within each row
             rows.map { row -> strategy.sortBlocksWithinRow(row) }
         } catch (e: Exception) {
-            Log.e(TAG, "Error grouping blocks into rows", e)
+            Timber.tag(TAG).e(e, "Error grouping blocks into rows")
             emptyList()
         }
     }

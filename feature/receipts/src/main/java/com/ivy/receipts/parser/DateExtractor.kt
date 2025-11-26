@@ -1,6 +1,7 @@
 package com.ivy.receipts.parser
 
 import android.util.Log
+import timber.log.Timber
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -25,7 +26,7 @@ class DateExtractor {
             val match = patterns.datePattern.find(line) ?: continue
             val raw = match.groupValues.getOrNull(1) ?: continue
 
-            Log.d(TAG, "Found potential date: $raw in line: $line")
+            Timber.tag(TAG).d("Found potential date: $raw in line: $line")
 
             // Try each date format until one works
             for (fmt in patterns.dateFormats) {
@@ -38,15 +39,15 @@ class DateExtractor {
                         .atStartOfDay(ZoneId.systemDefault())
                         .toInstant()
 
-                    Log.d(TAG, "Successfully parsed date: $date using format: $fmt")
+                    Timber.tag(TAG).d("Successfully parsed date: $date using format: $fmt")
                     return date
                 } catch (e: Exception) {
-                    Log.d(TAG, "Failed to parse '$raw' with format '$fmt': ${e.message}")
+                    Timber.tag(TAG).d("Failed to parse '$raw' with format '$fmt': ${e.message}")
                 }
             }
         }
 
-        Log.d(TAG, "No valid date found in receipt, using current time")
+        Timber.tag(TAG).d("No valid date found in receipt, using current time")
         return Instant.now()
     }
 

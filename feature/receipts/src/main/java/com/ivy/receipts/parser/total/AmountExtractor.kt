@@ -6,6 +6,7 @@ import com.ivy.receipts.parser.ReceiptPatterns
 import com.ivy.receipts.parser.decimalSeparator
 import com.ivy.receipts.parser.thousandsSeparator
 import com.ivy.receipts.parser.toMoney
+import timber.log.Timber
 
 /**
  * Extracts and parses monetary amounts from receipt text.
@@ -26,7 +27,7 @@ class AmountExtractor {
 
         // Don't extract negative amounts (these are usually change/return amounts)
         if (trimmed.startsWith("-")) {
-            Log.d(TAG, "Rejecting negative amount: $trimmed")
+            Timber.tag(TAG).d("Rejecting negative amount: $trimmed")
             return 0.0
         }
 
@@ -34,7 +35,7 @@ class AmountExtractor {
         // Reject patterns like: "25.11.2025", "25.11. 20", "25.11.", ": 25.11", "25.11.20"
         // Key characteristic: 2 dots with 2 digits on each side (day.month pattern)
         if (trimmed.contains(Regex("\\d{1,2}\\.\\d{1,2}\\."))) {
-            Log.d(TAG, "Rejecting date pattern: $trimmed")
+            Timber.tag(TAG).d("Rejecting date pattern: $trimmed")
             return 0.0
         }
 
@@ -56,7 +57,7 @@ class AmountExtractor {
         val match = regex.find(trimmed)
 
         if (match == null) {
-            Log.d(TAG, "No amount pattern found in: $trimmed")
+            Timber.tag(TAG).d("No amount pattern found in: $trimmed")
             return 0.0
         }
 
@@ -69,18 +70,18 @@ class AmountExtractor {
         // Double-check: if it contains date patterns, reject it
         // Reject if it has 2+ dots (e.g., "25.11.20" would become "2511.20" after extraction)
         if (raw.count { it == '.' } >= ParserConstants.MIN_DOTS_FOR_DATE_REJECTION) {
-            Log.d(TAG, "Rejecting multi-dot pattern (date): $raw")
+            Timber.tag(TAG).d("Rejecting multi-dot pattern (date): $raw")
             return 0.0
         }
 
         // Reject if it looks like a year (4 consecutive digits)
         if (raw.contains(Regex("\\d{${ParserConstants.MIN_DIGITS_FOR_YEAR_REJECTION}}"))) {
-            Log.d(TAG, "Rejecting year pattern: $raw")
+            Timber.tag(TAG).d("Rejecting year pattern: $raw")
             return 0.0
         }
 
         val amount = parseMoney(raw, patterns)
-        Log.d(TAG, "Extracted amount $amount from: $trimmed")
+        Timber.tag(TAG).d("Extracted amount $amount from: $trimmed")
         return amount
     }
 
@@ -96,7 +97,7 @@ class AmountExtractor {
             .replace(",", ".")
             .toDoubleOrNull() ?: 0.0
 
-        Log.d(TAG, "Extracted negative amount $amount from: $text")
+        Timber.tag(TAG).d("Extracted negative amount $amount from: $text")
         return amount
     }
 

@@ -4,6 +4,7 @@ import android.util.Log
 import com.ivy.receipts.category.MerchantCategoryPatterns
 import com.ivy.receipts.category.locales.GermanMerchantPatterns
 import com.ivy.receipts.ocr.TextBlock
+import timber.log.Timber
 import java.util.Locale
 
 /**
@@ -23,7 +24,7 @@ class MerchantExtractor(
     fun extractMerchantName(blocks: List<TextBlock>): String? {
         val filteredBlocks = blocks.filter { it.boundingBox != null }
         if (filteredBlocks.isEmpty()) {
-            Log.d(TAG, "No blocks with bounding boxes for merchant extraction")
+            Timber.tag(TAG).d("No blocks with bounding boxes for merchant extraction")
             return null
         }
 
@@ -33,7 +34,7 @@ class MerchantExtractor(
         val imageHeight = allBounds.maxOfOrNull { it.bottom }?.minus(allBounds.minOfOrNull { it.top } ?: 0) ?: 0
 
         if (imageHeight == 0) {
-            Log.w(TAG, "Invalid image dimensions for merchant extraction")
+            Timber.tag(TAG).w("Invalid image dimensions for merchant extraction")
             return null
         }
 
@@ -54,20 +55,20 @@ class MerchantExtractor(
         val topBlocks = sortedBlocks.take(numBlocksToCheck)
         val merchantText = topBlocks.joinToString(" ") { it.text }.uppercase(Locale.getDefault())
 
-        Log.d(TAG, "Orientation: ${if (isLandscape) "LANDSCAPE" else "PORTRAIT"}")
-        Log.d(TAG, "Top $numBlocksToCheck blocks text: ${topBlocks.map { it.text }}")
-        Log.d(TAG, "Merchant text for matching: '$merchantText'")
+        Timber.tag(TAG).d("Orientation: ${if (isLandscape) "LANDSCAPE" else "PORTRAIT"}")
+        Timber.tag(TAG).d("Top $numBlocksToCheck blocks text: ${topBlocks.map { it.text }}")
+        Timber.tag(TAG).d("Merchant text for matching: '$merchantText'")
 
         // Find first matching merchant (prioritize by order of appearance in patterns)
         for ((merchantName, _) in patterns.merchantMappings) {
             // Compare in uppercase for case-insensitive matching
             if (merchantText.contains(merchantName.uppercase(Locale.getDefault()))) {
-                Log.i(TAG, "Matched merchant: $merchantName")
+                Timber.tag(TAG).i("Matched merchant: $merchantName")
                 return merchantName.toTitleCase()
             }
         }
 
-        Log.d(TAG, "No merchant match found in patterns")
+        Timber.tag(TAG).d("No merchant match found in patterns")
 
         // If no known merchant found, try to extract from first block
         val fallbackName = topBlocks.firstOrNull()?.text
@@ -76,7 +77,7 @@ class MerchantExtractor(
             ?.toTitleCase()
 
         if (fallbackName != null) {
-            Log.d(TAG, "Using fallback merchant name: $fallbackName")
+            Timber.tag(TAG).d("Using fallback merchant name: $fallbackName")
         }
 
         return fallbackName
