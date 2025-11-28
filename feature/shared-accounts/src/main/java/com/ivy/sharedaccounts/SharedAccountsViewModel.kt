@@ -17,8 +17,6 @@ import com.ivy.data.model.AccountId
 import com.ivy.data.model.SharedAccount
 import com.ivy.data.model.CategoryId
 import com.ivy.data.model.SharedAccountId
-import com.ivy.data.model.SharedTransactionId
-import com.ivy.data.model.SharedTransactionType
 import com.ivy.data.model.primitive.AssetCode
 import com.ivy.data.model.primitive.NotBlankTrimmedString
 import com.ivy.data.repository.AccountRepository
@@ -67,17 +65,15 @@ class SharedAccountsViewModel @Inject constructor(
     private var showAcceptInviteModal by mutableStateOf(false)
 
     init {
+        // Observe shared accounts reactively for real-time updates
         viewModelScope.launch {
-            dataObserver.writeEvents.collectLatest { event ->
-                when (event) {
-                    is DataWriteEvent.SharedAccountChange -> {
-                        loadSharedAccounts()
-                    }
+            sharedAccountRepository.observeAll().collectLatest { accounts ->
+                android.util.Log.d("SharedAccounts", "Shared accounts updated from Flow: ${accounts.size} items")
+                sharedAccounts = accounts
+                isLoading = false
 
-                    else -> {
-                        // do nothing
-                    }
-                }
+                // Set up real-time listeners when accounts change
+                setupRealtimeListeners()
             }
         }
     }
@@ -121,97 +117,17 @@ class SharedAccountsViewModel @Inject constructor(
 
     private fun onStart() {
         viewModelScope.launch {
-            loadSharedAccounts()
             loadAccounts()
             loadBaseCurrency()
             // TODO: Load current user UID from AuthRepository
-
-            // Set up real-time listeners for all shared accounts
-            setupRealtimeListeners()
-        }
-    }
-
-    private suspend fun loadSharedAccounts() {
-        isLoading = true
-        sharedAccounts = try {
-            // For now, load all shared accounts
-            // TODO: Filter by current user when auth is integrated
-            sharedAccountRepository.findAll()
-        } catch (e: Exception) {
-            emptyList()
-        } finally {
-            isLoading = false
+            // Note: Shared accounts are now loaded reactively via Flow in init
         }
     }
 
     private fun setupRealtimeListeners() {
-        // Get all shared account IDs
-        val accountIds = sharedAccounts.map { it.id }
-
-        if (accountIds.isEmpty()) {
-            android.util.Log.d("SharedAccounts", "No shared accounts to listen to")
-            return
-        }
-
-        android.util.Log.d("SharedAccounts", "Setting up real-time listeners for ${accountIds.size} shared accounts")
-
-        // Set up listeners for all shared accounts
-        // Note: Listeners are managed by FirestoreInvitationRepository
-        firestoreInvitationRepository.listenToAllSharedAccountsTransactions(
-            sharedAccountIds = accountIds,
-            onTransactionsChanged = { accountId, transactionsData ->
-                android.util.Log.d("SharedAccounts", "Real-time update: ${transactionsData.size} transactions for account ${accountId.value}")
-
-                // Sync transactions to local database in background
-                viewModelScope.launch(Dispatchers.IO) {
-                    syncTransactionsToLocal(accountId, transactionsData)
-                }
-            },
-            onError = { error ->
-                android.util.Log.e("SharedAccounts", "Listener error: $error")
-            }
-        )
-
-        android.util.Log.d("SharedAccounts", "Real-time listeners set up successfully")
-    }
-
-    private suspend fun syncTransactionsToLocal(
-        accountId: SharedAccountId,
-        transactionsData: List<Map<String, Any>>
-    ) {
-        try {
-            android.util.Log.d("SharedAccounts", "Syncing ${transactionsData.size} transactions to local DB for account ${accountId.value}")
-
-            transactionsData.forEach { data ->
-                try {
-                    val transaction = com.ivy.data.model.SharedTransaction(
-                        id = SharedTransactionId(UUID.fromString(data["id"] as String)),
-                        sharedAccountId = accountId,
-                        type = SharedTransactionType.valueOf(data["type"] as String),
-                        amount = (data["amount"] as? Number)?.toDouble() ?: 0.0,
-                        title = (data["title"] as? String)?.let { NotBlankTrimmedString.unsafe(it) },
-                        description = (data["description"] as? String)?.let { NotBlankTrimmedString.unsafe(it) },
-                        category = (data["category"] as? String)?.let { CategoryId(UUID.fromString(it)) },
-                        time = Instant.ofEpochMilli(data["time"] as Long),
-                        createdBy = data["createdBy"] as String,
-                        createdAt = Instant.ofEpochMilli(data["createdAt"] as Long),
-                        updatedAt = Instant.ofEpochMilli(data["updatedAt"] as Long),
-                        updatedBy = data["updatedBy"] as String,
-                        deleted = data["deleted"] as? Boolean ?: false
-                    )
-
-                    // Save to local Room database
-                    sharedTransactionRepository.save(transaction)
-                    android.util.Log.d("SharedAccounts", "Synced transaction: ${transaction.id.value}")
-                } catch (e: Exception) {
-                    android.util.Log.e("SharedAccounts", "Error parsing transaction: ${data["id"]}", e)
-                }
-            }
-
-            android.util.Log.d("SharedAccounts", "Successfully synced all transactions for account ${accountId.value}")
-        } catch (e: Exception) {
-            android.util.Log.e("SharedAccounts", "Error syncing transactions for account ${accountId.value}", e)
-        }
+        // Note: Real-time listeners are now managed by SharedAccountSyncService
+        // This is a no-op but kept for reference
+        android.util.Log.d("SharedAccounts", "Listeners managed by SharedAccountSyncService")
     }
 
 
@@ -286,9 +202,7 @@ class SharedAccountsViewModel @Inject constructor(
                             }
                         }
 
-                        // Reload shared accounts
-                        loadSharedAccounts()
-
+                        // Shared accounts will reload automatically via Flow
                         // Navigate to the shared account detail
                         navigation.navigateTo(
                             SharedAccountDetailScreen(sharedAccountId = invitation.sharedAccountId.value)
@@ -347,7 +261,7 @@ class SharedAccountsViewModel @Inject constructor(
             )
 
             showCreateModal = false
-            loadSharedAccounts()
+            // Shared accounts will reload automatically via Flow
         }
     }
 }

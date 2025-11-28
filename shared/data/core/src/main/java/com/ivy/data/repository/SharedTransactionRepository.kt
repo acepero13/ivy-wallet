@@ -8,6 +8,7 @@ import com.ivy.data.model.SharedAccountId
 import com.ivy.data.model.SharedTransaction
 import com.ivy.data.model.SharedTransactionId
 import com.ivy.data.repository.mapper.SharedTransactionMapper
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import java.time.Instant
 import javax.inject.Inject
@@ -44,6 +45,18 @@ class SharedTransactionRepository @Inject constructor(
         sharedTransactionDao.findBySharedAccountId(sharedAccountId.value, deleted).mapNotNull {
             with(mapper) { it.toDomain() }.getOrNull()
         }
+    }
+
+    fun observeBySharedAccountId(
+        sharedAccountId: SharedAccountId,
+        deleted: Boolean = false
+    ): kotlinx.coroutines.flow.Flow<List<SharedTransaction>> {
+        return sharedTransactionDao.observeBySharedAccountId(sharedAccountId.value, deleted)
+            .map { entities ->
+                entities.mapNotNull {
+                    with(mapper) { it.toDomain() }.getOrNull()
+                }
+            }
     }
 
     suspend fun findBySharedAccountAndUser(

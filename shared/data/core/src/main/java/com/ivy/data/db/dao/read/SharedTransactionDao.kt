@@ -3,6 +3,7 @@ package com.ivy.data.db.dao.read
 import androidx.room.Dao
 import androidx.room.Query
 import com.ivy.data.db.entity.SharedTransactionEntity
+import kotlinx.coroutines.flow.Flow
 import java.time.Instant
 import java.util.UUID
 
@@ -13,6 +14,12 @@ interface SharedTransactionDao {
         sharedAccountId: UUID,
         deleted: Boolean = false
     ): List<SharedTransactionEntity>
+
+    @Query("SELECT * FROM shared_transactions WHERE sharedAccountId = :sharedAccountId AND deleted = :deleted ORDER BY time DESC")
+    fun observeBySharedAccountId(
+        sharedAccountId: UUID,
+        deleted: Boolean = false
+    ): Flow<List<SharedTransactionEntity>>
 
     @Query("SELECT * FROM shared_transactions WHERE id = :id")
     suspend fun findById(id: UUID): SharedTransactionEntity?

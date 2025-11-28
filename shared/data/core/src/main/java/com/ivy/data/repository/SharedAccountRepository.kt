@@ -7,6 +7,8 @@ import com.ivy.data.db.dao.write.WriteSharedAccountDao
 import com.ivy.data.model.SharedAccount
 import com.ivy.data.model.SharedAccountId
 import com.ivy.data.repository.mapper.SharedAccountMapper
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -33,6 +35,15 @@ class SharedAccountRepository @Inject constructor(
         }
     )
 
+    fun observeById(id: SharedAccountId): Flow<SharedAccount?> {
+        return sharedAccountDao.observeById(id.value)
+            .map { entity ->
+                entity?.let {
+                    with(mapper) { it.toDomain() }.getOrNull()
+                }
+            }
+    }
+
     suspend fun findAll(): List<SharedAccount> = memo.findAll(
         findAllOperation = {
             sharedAccountDao.findAll().mapNotNull {
@@ -41,6 +52,16 @@ class SharedAccountRepository @Inject constructor(
         },
         sortMemo = { sortedByDescending { it.createdAt } }
     )
+
+    fun observeAll(): Flow<List<SharedAccount>> {
+        return sharedAccountDao.observeAll()
+            .map { entities ->
+                entities.mapNotNull {
+                    with(mapper) { it.toDomain() }.getOrNull()
+                }
+                    .sortedByDescending { it.createdAt }
+            }
+    }
 
     suspend fun findByOwner(ownerUid: String): List<SharedAccount> =
         withContext(dispatchersProvider.io) {

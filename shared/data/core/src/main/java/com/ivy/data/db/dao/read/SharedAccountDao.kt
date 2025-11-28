@@ -3,6 +3,7 @@ package com.ivy.data.db.dao.read
 import androidx.room.Dao
 import androidx.room.Query
 import com.ivy.data.db.entity.SharedAccountEntity
+import kotlinx.coroutines.flow.Flow
 import java.util.UUID
 
 @Dao
@@ -10,8 +11,14 @@ interface SharedAccountDao {
     @Query("SELECT * FROM shared_accounts ORDER BY createdAt DESC")
     suspend fun findAll(): List<SharedAccountEntity>
 
+    @Query("SELECT * FROM shared_accounts ORDER BY createdAt DESC")
+    fun observeAll(): Flow<List<SharedAccountEntity>>
+
     @Query("SELECT * FROM shared_accounts WHERE id = :id")
     suspend fun findById(id: UUID): SharedAccountEntity?
+
+    @Query("SELECT * FROM shared_accounts WHERE id = :id")
+    fun observeById(id: UUID): Flow<SharedAccountEntity?>
 
     @Query("SELECT * FROM shared_accounts WHERE owners LIKE '%' || :ownerUid || '%' ORDER BY createdAt DESC")
     suspend fun findByOwner(ownerUid: String): List<SharedAccountEntity>

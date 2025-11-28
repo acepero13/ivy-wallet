@@ -72,19 +72,8 @@ class SharedAccountDetailViewModel @Inject constructor(
 
     init {
         android.util.Log.d("SharedAccountDetail", "ViewModel initialized: ${this.hashCode()}")
-        viewModelScope.launch {
-            dataObserver.writeEvents.collectLatest { event ->
-                when (event) {
-                    is DataWriteEvent.SharedAccountChange,
-                    is DataWriteEvent.SharedTransactionChange -> {
-                        loadData()
-                    }
-                    else -> {
-                        // do nothing
-                    }
-                }
-            }
-        }
+        // Note: Data observation is now done in setSharedAccountId using Flow
+        // This ensures reactive updates from Room when Firestore syncs changes
     }
 
     @Composable
@@ -365,12 +354,43 @@ class SharedAccountDetailViewModel @Inject constructor(
     fun setSharedAccountId(id: SharedAccountId) {
         android.util.Log.d("SharedAccountDetail", "setSharedAccountId called with: ${id.value}")
         sharedAccountId = id
-        android.util.Log.d("SharedAccountDetail", "Launching loadData coroutine from setSharedAccountId")
         isLoading = true
 
-        // Launch the data loading coroutine
-        viewModelScope.launch(Dispatchers.IO) {
-            loadData()
+        // Observe the shared account reactively
+        viewModelScope.launch {
+            sharedAccountRepository.observeById(id).collectLatest { account ->
+                android.util.Log.d("SharedAccountDetail", "Account updated from Flow: ${account?.name?.value}")
+                sharedAccount = account
+                if (account == null) {
+                    isLoading = false
+                }
+            }
+        }
+
+        // Observe transactions reactively
+        viewModelScope.launch {
+            sharedTransactionRepository.observeBySharedAccountId(id, deleted = false)
+                .collectLatest { allTransactions ->
+                    android.util.Log.d("SharedAccountDetail", "Transactions updated from Flow: ${allTransactions.size} items")
+
+                    val sortedTransactions = allTransactions.sortedByDescending { it.time }
+                    transactions = sortedTransactions.toImmutableList()
+
+                    val income = allTransactions
+                        .filter { it.type == SharedTransactionType.INCOME }
+                        .sumOf { it.amount }
+
+                    val expense = allTransactions
+                        .filter { it.type == SharedTransactionType.EXPENSE }
+                        .sumOf { it.amount }
+
+                    totalIncome = income
+                    totalExpense = expense
+                    balance = income - expense
+                    isLoading = false
+
+                    android.util.Log.d("SharedAccountDetail", "State updated: balance=$balance, transactions=${transactions.size}")
+                }
         }
     }
 
