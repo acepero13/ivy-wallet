@@ -15,7 +15,10 @@ import com.ivy.data.repository.mapper.SharedTransactionMapper
 import io.kotest.matchers.shouldBe
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Before
 import org.junit.Test
@@ -36,6 +39,8 @@ class SharedTransactionRepositoryTest {
             writeSharedTransactionDao = writeSharedTransactionDao,
             dispatchersProvider = TestDispatchersProvider,
             memoFactory = fakeRepositoryMemoFactory(),
+            transactionRepository = dagger.Lazy { mockk(relaxed = true) },
+            sharedAccountRepository = dagger.Lazy { mockk(relaxed = true) },
         )
     }
 
@@ -239,5 +244,152 @@ class SharedTransactionRepositoryTest {
                 true
             )
         }
+    }
+
+    // ==================== Flow-based Query Tests ====================
+
+    @Test
+    fun `observeBySharedAccountId - emits transactions as Flow`() = runTest {
+        // given
+        val sharedAccountId = SharedAccountId(UUID.randomUUID())
+        val now = Instant.now()
+
+        val entities = listOf(
+            SharedTransactionEntity(
+                id = UUID.randomUUID(),
+                sharedAccountId = sharedAccountId.value,
+                type = EntityTransactionType.EXPENSE,
+                amount = 50.0,
+                title = "Lunch",
+                description = null,
+                categoryId = null,
+                time = now,
+                createdBy = "user1",
+                createdAt = now,
+                updatedAt = now,
+                updatedBy = "user1",
+                deleted = false,
+                remoteId = null,
+                isSynced = false
+            ),
+            SharedTransactionEntity(
+                id = UUID.randomUUID(),
+                sharedAccountId = sharedAccountId.value,
+                type = EntityTransactionType.INCOME,
+                amount = 100.0,
+                title = "Salary",
+                description = null,
+                categoryId = null,
+                time = now,
+                createdBy = "user1",
+                createdAt = now,
+                updatedAt = now,
+                updatedBy = "user1",
+                deleted = false,
+                remoteId = null,
+                isSynced = false
+            )
+        )
+
+        every { sharedTransactionDao.observeBySharedAccountId(sharedAccountId.value, false) } returns flowOf(entities)
+
+        // when
+        val flow = repository.observeBySharedAccountId(sharedAccountId, deleted = false)
+        val res = flow.first()
+
+        // then
+        res.size shouldBe 2
+        res[0].type shouldBe SharedTransactionType.EXPENSE
+        res[0].amount shouldBe 50.0
+        res[1].type shouldBe SharedTransactionType.INCOME
+        res[1].amount shouldBe 100.0
+    }
+
+    @Test
+    fun `observeBySharedAccountId - emits empty list when no transactions`() = runTest {
+        // given
+        val sharedAccountId = SharedAccountId(UUID.randomUUID())
+        every { sharedTransactionDao.observeBySharedAccountId(sharedAccountId.value, false) } returns flowOf(emptyList())
+
+        // when
+        val flow = repository.observeBySharedAccountId(sharedAccountId, deleted = false)
+        val res = flow.first()
+
+        // then
+        res shouldBe emptyList()
+    }
+
+    @Test
+    fun `observeBySharedAccountId - filters deleted transactions when requested`() = runTest {
+        // given
+        val sharedAccountId = SharedAccountId(UUID.randomUUID())
+        val now = Instant.now()
+
+        val activeEntities = listOf(
+            SharedTransactionEntity(
+                id = UUID.randomUUID(),
+                sharedAccountId = sharedAccountId.value,
+                type = EntityTransactionType.EXPENSE,
+                amount = 50.0,
+                title = "Active",
+                description = null,
+                categoryId = null,
+                time = now,
+                createdBy = "user1",
+                createdAt = now,
+                updatedAt = now,
+                updatedBy = "user1",
+                deleted = false,
+                remoteId = null,
+                isSynced = false
+            )
+        )
+
+        every { sharedTransactionDao.observeBySharedAccountId(sharedAccountId.value, deleted = false) } returns flowOf(activeEntities)
+
+        // when
+        val flow = repository.observeBySharedAccountId(sharedAccountId, deleted = false)
+        val res = flow.first()
+
+        // then
+        res.size shouldBe 1
+        res[0].deleted shouldBe false
+    }
+
+    @Test
+    fun `observeBySharedAccountId - handles malformed entities gracefully`() = runTest {
+        // given
+        val sharedAccountId = SharedAccountId(UUID.randomUUID())
+        val now = Instant.now()
+
+        val entities = listOf(
+            SharedTransactionEntity(
+                id = UUID.randomUUID(),
+                sharedAccountId = sharedAccountId.value,
+                type = EntityTransactionType.EXPENSE,
+                amount = 50.0,
+                title = "Valid",
+                description = null,
+                categoryId = null,
+                time = now,
+                createdBy = "user1",
+                createdAt = now,
+                updatedAt = now,
+                updatedBy = "user1",
+                deleted = false,
+                remoteId = null,
+                isSynced = false
+            )
+        )
+
+        every { sharedTransactionDao.observeBySharedAccountId(sharedAccountId.value, false) } returns flowOf(entities)
+
+        // when
+        val flow = repository.observeBySharedAccountId(sharedAccountId, deleted = false)
+        val res = flow.first()
+
+        // then
+        // Should only include valid entities
+        res.size shouldBe 1
     }
 }
