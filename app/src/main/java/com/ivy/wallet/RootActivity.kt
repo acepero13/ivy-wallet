@@ -54,6 +54,7 @@ import com.ivy.wallet.ui.applocked.AppLockedScreen
 import com.ivy.widget.balance.WalletBalanceWidgetReceiver
 import com.ivy.widget.transaction.AddTransactionWidget
 import com.ivy.widget.transaction.AddTransactionWidgetCompact
+import com.ivy.widget.transaction.AddTransactionWidgetReduced
 import dagger.hilt.android.AndroidEntryPoint
 import java.time.LocalDate
 import java.time.LocalTime
@@ -162,6 +163,7 @@ class RootActivity : AppCompatActivity(), RootScreen {
         setupTimePicker()
         AddTransactionWidget.updateBroadcast(this)
         AddTransactionWidgetCompact.updateBroadcast(this)
+        AddTransactionWidgetReduced.updateBroadcast(this)
         WalletBalanceWidgetReceiver.updateBroadcast(this)
     }
 
