@@ -101,7 +101,7 @@ class ReceiptImageParsingTest {
                 }
 
                 // Debug: Check if "Betrag" is recognized as a keyword
-                val germanPatterns = com.ivy.receipts.parser.locales.GermanReceiptPatterns()
+                val germanPatterns = GermanReceiptPatterns()
                 println("=== KEYWORD CHECK ===")
                 println("Is 'Betrag' a total keyword? ${germanPatterns.isTotalKeyword("Betrag")}")
                 println("Is 'SUMME' a total keyword? ${germanPatterns.isTotalKeyword("SUMME")}")

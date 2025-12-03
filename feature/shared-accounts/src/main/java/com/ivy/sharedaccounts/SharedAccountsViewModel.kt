@@ -14,8 +14,8 @@ import com.ivy.data.DataWriteEvent
 import com.ivy.data.auth.AuthRepository
 import com.ivy.data.model.Account
 import com.ivy.data.model.AccountId
-import com.ivy.data.model.SharedAccount
 import com.ivy.data.model.CategoryId
+import com.ivy.data.model.SharedAccount
 import com.ivy.data.model.SharedAccountId
 import com.ivy.data.model.SharedTransactionId
 import com.ivy.data.model.SharedTransactionType
@@ -36,7 +36,7 @@ import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import timber.log.Timber
 import java.time.Instant
 import java.util.UUID
 import javax.inject.Inject
@@ -149,18 +149,20 @@ class SharedAccountsViewModel @Inject constructor(
         val accountIds = sharedAccounts.map { it.id }
 
         if (accountIds.isEmpty()) {
-            android.util.Log.d("SharedAccounts", "No shared accounts to listen to")
+            Timber.tag("SharedAccounts").d("No shared accounts to listen to")
             return
         }
 
-        android.util.Log.d("SharedAccounts", "Setting up real-time listeners for ${accountIds.size} shared accounts")
+        Timber.tag("SharedAccounts")
+            .d("Setting up real-time listeners for ${accountIds.size} shared accounts")
 
         // Set up listeners for all shared accounts
         // Note: Listeners are managed by FirestoreInvitationRepository
         firestoreInvitationRepository.listenToAllSharedAccountsTransactions(
             sharedAccountIds = accountIds,
             onTransactionsChanged = { accountId, transactionsData ->
-                android.util.Log.d("SharedAccounts", "Real-time update: ${transactionsData.size} transactions for account ${accountId.value}")
+                Timber.tag("SharedAccounts")
+                    .d("Real-time update: ${transactionsData.size} transactions for account ${accountId.value}")
 
                 // Sync transactions to local database in background
                 viewModelScope.launch(Dispatchers.IO) {
@@ -168,11 +170,11 @@ class SharedAccountsViewModel @Inject constructor(
                 }
             },
             onError = { error ->
-                android.util.Log.e("SharedAccounts", "Listener error: $error")
+                Timber.tag("SharedAccounts").e("Listener error: $error")
             }
         )
 
-        android.util.Log.d("SharedAccounts", "Real-time listeners set up successfully")
+        Timber.tag("SharedAccounts").d("Real-time listeners set up successfully")
     }
 
     private suspend fun syncTransactionsToLocal(
@@ -180,7 +182,8 @@ class SharedAccountsViewModel @Inject constructor(
         transactionsData: List<Map<String, Any>>
     ) {
         try {
-            android.util.Log.d("SharedAccounts", "Syncing ${transactionsData.size} transactions to local DB for account ${accountId.value}")
+            Timber.tag("SharedAccounts")
+                .d("Syncing ${transactionsData.size} transactions to local DB for account ${accountId.value}")
 
             transactionsData.forEach { data ->
                 try {
@@ -190,8 +193,18 @@ class SharedAccountsViewModel @Inject constructor(
                         type = SharedTransactionType.valueOf(data["type"] as String),
                         amount = (data["amount"] as? Number)?.toDouble() ?: 0.0,
                         title = (data["title"] as? String)?.let { NotBlankTrimmedString.unsafe(it) },
-                        description = (data["description"] as? String)?.let { NotBlankTrimmedString.unsafe(it) },
-                        category = (data["category"] as? String)?.let { CategoryId(UUID.fromString(it)) },
+                        description = (data["description"] as? String)?.let {
+                            NotBlankTrimmedString.unsafe(
+                                it
+                            )
+                        },
+                        category = (data["category"] as? String)?.let {
+                            CategoryId(
+                                UUID.fromString(
+                                    it
+                                )
+                            )
+                        },
                         time = Instant.ofEpochMilli(data["time"] as Long),
                         createdBy = data["createdBy"] as String,
                         createdAt = Instant.ofEpochMilli(data["createdAt"] as Long),
@@ -202,15 +215,17 @@ class SharedAccountsViewModel @Inject constructor(
 
                     // Save to local Room database
                     sharedTransactionRepository.save(transaction)
-                    android.util.Log.d("SharedAccounts", "Synced transaction: ${transaction.id.value}")
+                    Timber.tag("SharedAccounts").d("Synced transaction: ${transaction.id.value}")
                 } catch (e: Exception) {
-                    android.util.Log.e("SharedAccounts", "Error parsing transaction: ${data["id"]}", e)
+                    Timber.tag("SharedAccounts").e(e, "Error parsing transaction: ${data["id"]}")
                 }
             }
 
-            android.util.Log.d("SharedAccounts", "Successfully synced all transactions for account ${accountId.value}")
+            Timber.tag("SharedAccounts")
+                .d("Successfully synced all transactions for account ${accountId.value}")
         } catch (e: Exception) {
-            android.util.Log.e("SharedAccounts", "Error syncing transactions for account ${accountId.value}", e)
+            Timber.tag("SharedAccounts")
+                .e(e, "Error syncing transactions for account ${accountId.value}")
         }
     }
 
@@ -249,7 +264,7 @@ class SharedAccountsViewModel @Inject constructor(
                 val userUid = when (currentUser) {
                     is com.ivy.data.auth.AuthResult.Success -> currentUser.user.uid
                     else -> {
-                        android.util.Log.e("SharedAccounts", "User not authenticated")
+                        Timber.tag("SharedAccounts").e("User not authenticated")
                         // Fallback to local user
                         "local-user"
                     }
@@ -263,11 +278,11 @@ class SharedAccountsViewModel @Inject constructor(
 
                 result.fold(
                     ifLeft = { error ->
-                        android.util.Log.e("SharedAccounts", "Failed to accept invitation: $error")
+                        Timber.tag("SharedAccounts").e("Failed to accept invitation: $error")
                         // TODO: Show error toast/snackbar
                     },
                     ifRight = { invitation ->
-                        android.util.Log.d("SharedAccounts", "Invitation accepted successfully")
+                        Timber.tag("SharedAccounts").d("Invitation accepted successfully")
 
                         // If a linked account was selected, update the shared account
                         if (linkedAccountId != null) {
@@ -282,7 +297,7 @@ class SharedAccountsViewModel @Inject constructor(
                                     sharedAccountRepository.save(updated)
                                 }
                             } catch (e: Exception) {
-                                android.util.Log.e("SharedAccounts", "Failed to link account", e)
+                                Timber.tag("SharedAccounts").e(e, "Failed to link account")
                             }
                         }
 
@@ -296,7 +311,7 @@ class SharedAccountsViewModel @Inject constructor(
                     }
                 )
             } catch (e: Exception) {
-                android.util.Log.e("SharedAccounts", "Error accepting invitation", e)
+                Timber.tag("SharedAccounts").e(e, "Error accepting invitation")
                 // TODO: Show error toast/snackbar
             } finally {
                 showAcceptInviteModal = false
