@@ -5,6 +5,10 @@ plugins {
 
 android {
     namespace = "com.ivy.data.auth"
+
+    testOptions {
+        unitTests.isReturnDefaultValues = true
+    }
 }
 
 dependencies {

@@ -332,7 +332,7 @@ private fun TransactionButtons(
                 .padding(horizontal = 8.dp)
                 .alpha(buttonsShownPercent)
                 .zIndex(200f),
-            iconStart = R.drawable.ic_camera,
+            iconStart = R.drawable.ic_vue_media_photocamera,
             text = "Scan Receipt",
             solidBackground = true
         ) {

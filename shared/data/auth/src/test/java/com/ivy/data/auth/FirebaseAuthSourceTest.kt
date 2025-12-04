@@ -123,7 +123,7 @@ class FirebaseAuthSourceTest {
             every { user } returns mockUser
         }
         val mockTask = mockSuccessTask(mockAuthResult)
-        val mockUpdateTask = mockSuccessTask(mockk())
+        val mockUpdateTask = mockSuccessTask<Void?>(null)
 
         every {
             firebaseAuth.createUserWithEmailAndPassword(any(), any())
@@ -171,7 +171,7 @@ class FirebaseAuthSourceTest {
     @Test
     fun `sendSignInLinkToEmail returns Success on successful email send`() = runTest {
         // Given
-        val mockTask = mockSuccessTask(mockk<Void>())
+        val mockTask = mockSuccessTask<Void?>(null)
         every {
             firebaseAuth.sendSignInLinkToEmail(any(), any())
         } returns mockTask
@@ -225,7 +225,7 @@ class FirebaseAuthSourceTest {
             displayName = null,
             isEmailVerified = false
         )
-        val mockTask = mockSuccessTask(mockk<Void>())
+        val mockTask = mockSuccessTask<Void?>(null)
         every { firebaseAuth.currentUser } returns mockUser
         every { mockUser.delete() } returns mockTask
 
@@ -297,7 +297,6 @@ class FirebaseAuthSourceTest {
             every { isCanceled } returns false
             every { exception } returns null
             every { getResult() } returns result
-            coEvery { await() } returns result
         }
     }
 
@@ -307,7 +306,7 @@ class FirebaseAuthSourceTest {
             every { isSuccessful } returns false
             every { isCanceled } returns false
             every { this@mockk.exception } returns exception
-            coEvery { await() } throws exception
+            every { getResult() } throws exception
         }
     }
 }
